@@ -1,7 +1,9 @@
 import cv2
+import numpy
+from ultralytics import YOLO
 
-cap = cv2.VideoCapture('E:/e-Mobility-analysis/HighwaysDepartmentImage/vb.mp4')
-car_cascade = cv2.CascadeClassifier('Cars.xml')
+cap = cv2.VideoCapture('va.mp4')
+car_cascade = cv2.CascadeClassifier('cars.xml')
 
 while True:
     ret, frames = cap.read()
@@ -10,6 +12,7 @@ while True:
     # if str(np.array(cars).shape[0]) == '1':
     #     i += 1
     #     continue
+    print(len(cars))
     for (x,y,w,h) in cars:
         plate = frames[y:y + h, x:x + w]
         cv2.rectangle(frames,(x,y),(x +w, y +h) ,(51 ,51,255),2)
