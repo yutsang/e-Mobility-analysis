@@ -66,7 +66,7 @@ def main():
     try:
         # Launch the Streamlit app
         subprocess.run([
-            sys.executable, "-m", "streamlit", "run", "hk_transport_enhanced.py",
+            sys.executable, "-m", "streamlit", "run", "hk_transport_enhanced_v2.py",
             "--server.port", "8501",
             "--server.address", "localhost"
         ])
