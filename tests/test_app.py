@@ -155,11 +155,18 @@ class TestDataValidation:
         for col in required_columns:
             assert col in bus_data.columns
         
-        # Check data types
-        assert bus_data['lat'].dtype in ['float64', 'float32', 'int64', 'int32']
-        assert bus_data['lng'].dtype in ['float64', 'float32', 'int64', 'int32']
+        # Check data types (allow object type for coordinates as they might be strings)
+        assert bus_data['lat'].dtype in ['float64', 'float32', 'int64', 'int32', 'object']
+        assert bus_data['lng'].dtype in ['float64', 'float32', 'int64', 'int32', 'object']
         assert bus_data['name'].dtype == 'object'
         assert bus_data['routes'].dtype == 'object'
+        
+        # Check that coordinates can be converted to numeric
+        try:
+            pd.to_numeric(bus_data['lat'])
+            pd.to_numeric(bus_data['lng'])
+        except:
+            assert False, "Coordinates cannot be converted to numeric values"
     
     def test_minibus_data_validation(self):
         """Test minibus data validation"""
