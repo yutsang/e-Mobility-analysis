@@ -1107,13 +1107,19 @@ def main():
         with st.spinner("Loading route details..."):
             route_stops = get_cached_route_stops(route_id)
         if not route_stops.empty:
-            current_direction, directions = _handle_direction_logic(route_stops, selected_route_data)
+            current_direction, directions = _handle_direction_logic(
+                route_stops, selected_route_data
+            )
             _show_debug_info(current_direction, directions, route_stops)
             direction_stops = route_stops[
                 route_stops["direction"] == current_direction
             ].sort_values("sequence")
-            first_stop, last_stop = _get_route_endpoints(direction_stops, selected_route_data)
-            _display_route_info(selected_route_data, first_stop, last_stop, current_direction)
+            first_stop, last_stop = _get_route_endpoints(
+                direction_stops, selected_route_data
+            )
+            _display_route_info(
+                selected_route_data, first_stop, last_stop, current_direction
+            )
             _render_css_and_buttons(directions, current_direction)
             if not direction_stops.empty:
                 _render_map_and_stops(direction_stops, current_direction)

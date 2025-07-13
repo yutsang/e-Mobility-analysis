@@ -224,8 +224,7 @@ def _handle_direction_selection(route_stops):
 
     if len(available_directions) > 1:
         direction_options = [
-            f"{d['name']} ({d['stops']} stops)"
-            for d in available_directions
+            f"{d['name']} ({d['stops']} stops)" for d in available_directions
         ]
         selected_direction_display = st.sidebar.selectbox(
             "Select Direction",
@@ -237,9 +236,7 @@ def _handle_direction_selection(route_stops):
         ]["direction"]
     else:
         selected_direction = available_directions[0]["direction"]
-        st.sidebar.info(
-            f"Single direction: {available_directions[0]['name']}"
-        )
+        st.sidebar.info(f"Single direction: {available_directions[0]['name']}")
 
     return selected_direction
 
@@ -264,12 +261,8 @@ def _handle_stop_selection(route_stops, selected_direction):
     if selected_stop_display == "None":
         return None
 
-    stop_seq = int(
-        selected_stop_display.split(":")[0].replace("Stop ", "")
-    )
-    selected_stop_row = direction_stops[
-        direction_stops["sequence"] == stop_seq
-    ]
+    stop_seq = int(selected_stop_display.split(":")[0].replace("Stop ", ""))
+    selected_stop_row = direction_stops[direction_stops["sequence"] == stop_seq]
     if not selected_stop_row.empty:
         return selected_stop_row.iloc[0]["stop_id"]
 
@@ -369,10 +362,12 @@ def _render_map_and_stops_table(route_stops, selected_stop_id, selected_directio
         display_stops = direction_stops[["sequence", "stop_name", "stop_id"]].copy()
         display_stops.columns = ["Sequence", "Stop Name", "Stop ID"]
         if selected_stop_id:
+
             def highlight_selected(row):
                 if row["Stop ID"] == selected_stop_id:
                     return ["background-color: #ffeb3b"] * len(row)
                 return [""] * len(row)
+
             st.dataframe(
                 display_stops.style.apply(highlight_selected, axis=1),
                 use_container_width=True,
@@ -430,7 +425,13 @@ def main():
     filtered_routes, search_term = _setup_sidebar_controls(sorted_routes)
 
     # Handle route selection
-    selected_route_id, selected_route_info, route_stops, selected_direction, selected_stop_id = _handle_route_selection(filtered_routes)
+    (
+        selected_route_id,
+        selected_route_info,
+        route_stops,
+        selected_direction,
+        selected_stop_id,
+    ) = _handle_route_selection(filtered_routes)
 
     # Handle direction and stop selection if route is selected
     if selected_route_id and not route_stops.empty and selected_direction is None:

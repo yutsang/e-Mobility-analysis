@@ -97,7 +97,7 @@ def _get_special_route_type(indicator: str) -> str:
         "A": "Airport",
         "E": "Airport",
         "S": "Special Service",
-        "R": "Special Service"
+        "R": "Special Service",
     }
     return route_type_map.get(indicator, "Special")
 
@@ -390,7 +390,9 @@ def get_route_geometry_with_progress(
     return all_coordinates
 
 
-def _calculate_map_bounds(route_stops: pd.DataFrame, direction: int, selected_stop_id: Optional[str] = None) -> tuple[float, float, int]:
+def _calculate_map_bounds(
+    route_stops: pd.DataFrame, direction: int, selected_stop_id: Optional[str] = None
+) -> tuple[float, float, int]:
     """Calculate map center and zoom level based on route stops"""
     if not route_stops.empty:
         direction_stops = route_stops[route_stops["direction"] == direction]
@@ -459,9 +461,16 @@ def _add_route_path(m: folium.Map, route_stops: pd.DataFrame, direction: int) ->
         ).add_to(m)
 
 
-def _add_stop_markers(m: folium.Map, route_stops: pd.DataFrame, direction: int, selected_stop_id: Optional[str] = None) -> None:
+def _add_stop_markers(
+    m: folium.Map,
+    route_stops: pd.DataFrame,
+    direction: int,
+    selected_stop_id: Optional[str] = None,
+) -> None:
     """Add stop markers to map"""
-    direction_stops = route_stops[route_stops["direction"] == direction].sort_values("sequence")
+    direction_stops = route_stops[route_stops["direction"] == direction].sort_values(
+        "sequence"
+    )
 
     for idx, stop in direction_stops.iterrows():
         if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
@@ -480,9 +489,13 @@ def _add_stop_markers(m: folium.Map, route_stops: pd.DataFrame, direction: int, 
             ).add_to(m)
 
 
-def _add_reference_line(m: folium.Map, route_stops: pd.DataFrame, direction: int) -> None:
+def _add_reference_line(
+    m: folium.Map, route_stops: pd.DataFrame, direction: int
+) -> None:
     """Add reference line between stops"""
-    direction_stops = route_stops[route_stops["direction"] == direction].sort_values("sequence")
+    direction_stops = route_stops[route_stops["direction"] == direction].sort_values(
+        "sequence"
+    )
     stop_coords = []
 
     for idx, stop in direction_stops.iterrows():
@@ -507,7 +520,9 @@ def create_enhanced_route_map(
     direction: int = 1,
 ) -> folium.Map:
     """Create enhanced map with route stops, OSM routing, and center button"""
-    center_lat, center_lng, zoom_level = _calculate_map_bounds(route_stops, direction, selected_stop_id)
+    center_lat, center_lng, zoom_level = _calculate_map_bounds(
+        route_stops, direction, selected_stop_id
+    )
 
     # Create map
     m = folium.Map(
