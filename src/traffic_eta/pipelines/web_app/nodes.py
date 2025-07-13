@@ -7,7 +7,9 @@ import logging
 import os
 import re
 import sqlite3
-from typing import Any, Optional
+import time
+from datetime import datetime
+from typing import Any, List, Optional, Tuple
 
 import folium
 import pandas as pd
@@ -18,6 +20,15 @@ from kedro.config import OmegaConfigLoader
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Constants for magic numbers
+MIN_STOPS_FOR_ROUTE = 2
+HTTP_OK = 200
+ZOOM_VERY_SPREAD = 0.3
+ZOOM_MODERATE_SPREAD = 0.2
+ZOOM_SOME_SPREAD = 0.1
+ZOOM_CLOSE = 0.05
+ZOOM_VERY_CLOSE = 0.02
 
 # Load configuration
 conf_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "conf")
@@ -58,7 +69,7 @@ def load_traffic_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
             # Get all stops
             stops_query = """
-                SELECT 
+                SELECT
                     stop_id,
                     stop_name_en as stop_name,
                     lat,
@@ -112,7 +123,7 @@ def get_route_stops_with_directions(route_id: str) -> pd.DataFrame:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             query = """
-                SELECT 
+                SELECT
                     rs.route_id,
                     rs.stop_id,
                     s.stop_name_en as stop_name,
@@ -141,7 +152,7 @@ def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
             # Get route information
             route_query = """
                 SELECT origin_en, destination_en, route_type
-                FROM routes 
+                FROM routes
                 WHERE route_id = ?
             """
             route_info = pd.read_sql_query(route_query, conn, params=(route_id,))
@@ -157,7 +168,7 @@ def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
             # Get available directions
             directions_query = """
                 SELECT DISTINCT direction, COUNT(*) as stop_count
-                FROM route_stops 
+                FROM route_stops
                 WHERE route_id = ?
                 GROUP BY direction
                 ORDER BY direction
@@ -175,14 +186,12 @@ def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
                     # Circular routes have same origin/destination
                     depot_name = f"{origin} (Circular)"
                     direction_name = "Circular"
-                else:
-                    # Regular routes have different depot names for each direction
-                    if direction == 1:  # Outbound
-                        depot_name = f"{origin} → {destination}"
-                        direction_name = "Outbound"
-                    else:  # Inbound
-                        depot_name = f"{destination} → {origin}"
-                        direction_name = "Inbound"
+                elif direction == 1:  # Outbound
+                    depot_name = f"{origin} → {destination}"
+                    direction_name = "Outbound"
+                else:  # Inbound
+                    depot_name = f"{destination} → {origin}"
+                    direction_name = "Inbound"
 
                 directions.append(
                     {
@@ -203,8 +212,6 @@ def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
 def natural_sort_key(route_id: str) -> tuple[int, str]:
     """Create a natural sort key for route IDs"""
     # Extract numeric and non-numeric parts
-    import re
-
     match = re.match(r"(\d+)(.*)", route_id)
     if match:
         number = int(match.group(1))
@@ -262,10 +269,10 @@ def search_routes_with_directions(
 
 
 def get_osm_route_with_waypoints(
-    stops_coords: List[Tuple[float, float]], max_waypoints: int = MAX_WAYPOINTS
-) -> List[List[float]]:
+    stops_coords: list[tuple[float, float]], max_waypoints: int = MAX_WAYPOINTS
+) -> list[list[float]]:
     """Get OSM route through waypoints with segmentation for large routes"""
-    if len(stops_coords) < 2:
+    if len(stops_coords) < MIN_STOPS_FOR_ROUTE:
         return []
 
     all_coordinates = []
@@ -274,7 +281,7 @@ def get_osm_route_with_waypoints(
     for i in range(0, len(stops_coords), max_waypoints - 1):
         segment_stops = stops_coords[i : i + max_waypoints]
 
-        if len(segment_stops) < 2:
+        if len(segment_stops) < MIN_STOPS_FOR_ROUTE:
             continue
 
         segment_route = get_single_osm_route(segment_stops)
@@ -284,19 +291,18 @@ def get_osm_route_with_waypoints(
                 all_coordinates.extend(segment_route)
             else:  # Subsequent segments, avoid duplication
                 all_coordinates.extend(segment_route[1:])
+        # Fallback to straight lines for this segment
+        elif i == 0:
+            all_coordinates.extend([[lat, lng] for lat, lng in segment_stops])
         else:
-            # Fallback to straight lines for this segment
-            if i == 0:
-                all_coordinates.extend([[lat, lng] for lat, lng in segment_stops])
-            else:
-                all_coordinates.extend([[lat, lng] for lat, lng in segment_stops[1:]])
+            all_coordinates.extend([[lat, lng] for lat, lng in segment_stops[1:]])
 
     return all_coordinates
 
 
 def get_single_osm_route(
-    stops_coords: List[Tuple[float, float]]
-) -> Optional[List[List[float]]]:
+    stops_coords: list[tuple[float, float]]
+) -> Optional[list[list[float]]]:
     """Get OSM route for a single segment"""
     try:
         # Create coordinate string for OSRM with waypoints
@@ -306,7 +312,7 @@ def get_single_osm_route(
         url = f"{OSM_BASE_URL}/{coords_str}?overview=full&geometries=geojson"
 
         response = requests.get(url, timeout=OSM_TIMEOUT)
-        if response.status_code == 200:
+        if response.status_code == HTTP_OK:
             data = response.json()
             if "routes" in data and len(data["routes"]) > 0:
                 geometry = data["routes"][0]["geometry"]
@@ -324,7 +330,7 @@ def get_single_osm_route(
 
 def get_route_geometry_with_progress(
     route_stops: pd.DataFrame, direction: int
-) -> List[List[float]]:
+) -> list[list[float]]:
     """Get route geometry with progress tracking"""
     if route_stops.empty:
         return []
@@ -334,7 +340,7 @@ def get_route_geometry_with_progress(
         "sequence"
     )
 
-    if len(direction_stops) < 2:
+    if len(direction_stops) < MIN_STOPS_FOR_ROUTE:
         return []
 
     # Get stop coordinates in order
@@ -343,7 +349,7 @@ def get_route_geometry_with_progress(
         if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
             stops_coords.append((stop["lat"], stop["lng"]))
 
-    if len(stops_coords) < 2:
+    if len(stops_coords) < MIN_STOPS_FOR_ROUTE:
         return stops_coords
 
     # Progress tracking
@@ -360,25 +366,22 @@ def get_route_geometry_with_progress(
 
     if params["ui"]["show_progress_bars"]:
         progress_bar.progress(0.8)
-        progress_text.text(f"🗺️ Processing route geometry...")
+        progress_text.text("🗺️ Processing route geometry...")
 
     # If OSM routing fails, fall back to straight lines
     if not all_coordinates:
         all_coordinates = [[lat, lng] for lat, lng in stops_coords]
         if params["ui"]["show_progress_bars"]:
-            progress_text.text(f"⚠️ Using direct path (OSM routing unavailable)")
-    else:
-        if params["ui"]["show_progress_bars"]:
-            progress_text.text(
-                f"✅ Route loaded with {len(all_coordinates)} path points"
-            )
+            progress_text.text("⚠️ Using direct path (OSM routing unavailable)")
+    elif params["ui"]["show_progress_bars"]:
+        progress_text.text(
+            f"✅ Route loaded with {len(all_coordinates)} path points"
+        )
 
     if params["ui"]["show_progress_bars"]:
         progress_bar.progress(1.0)
 
         # Clear progress indicators
-        import time
-
         time.sleep(1)
         progress_bar.empty()
         progress_text.empty()
@@ -413,15 +416,15 @@ def create_enhanced_route_map(
                 # Determine zoom level based on the spread of stops - improved zoom levels
                 max_range = max(lat_range, lng_range)
 
-                if max_range > 0.3:  # Very spread out
+                if max_range > ZOOM_VERY_SPREAD:  # Very spread out
                     zoom_level = 11
-                elif max_range > 0.2:  # Moderately spread out
+                elif max_range > ZOOM_MODERATE_SPREAD:  # Moderately spread out
                     zoom_level = 12
-                elif max_range > 0.1:  # Somewhat spread out
+                elif max_range > ZOOM_SOME_SPREAD:  # Somewhat spread out
                     zoom_level = 13
-                elif max_range > 0.05:  # Close together
+                elif max_range > ZOOM_CLOSE:  # Close together
                     zoom_level = 14
-                elif max_range > 0.02:  # Very close
+                elif max_range > ZOOM_VERY_CLOSE:  # Very close
                     zoom_level = 15
                 else:  # Extremely close
                     zoom_level = 16
@@ -449,14 +452,14 @@ def create_enhanced_route_map(
 
     # Add center button to return to HK range
     center_button_html = f"""
-    <div style="position: fixed; 
-                top: 10px; right: 10px; width: 150px; height: 40px; 
+    <div style="position: fixed;
+                top: 10px; right: 10px; width: 150px; height: 40px;
                 background-color: white; border: 2px solid #1f77b4;
                 border-radius: 5px; z-index: 1000; font-size: 14px;
                 display: flex; align-items: center; justify-content: center;
-                cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"
-         onclick="map_{m.get_name()}.setView([{HK_CENTER[0]}, {HK_CENTER[1]}], {DEFAULT_ZOOM});">
-        🏠 Center to HK
+                cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+         onclick="map.setView([{HK_CENTER[0]}, {HK_CENTER[1]}], {DEFAULT_ZOOM});">
+        🏠 Center Map
     </div>
     """
     m.get_root().html.add_child(folium.Element(center_button_html))
@@ -558,10 +561,8 @@ def should_update_data() -> bool:
 
     # Check daily update schedule
     if params["schedule"]["daily_update"]["enabled"]:
-        import datetime
-
-        now = datetime.datetime.now()
-        update_time = datetime.datetime.strptime(
+        now = datetime.now()
+        update_time = datetime.strptime(
             params["schedule"]["daily_update"]["time"], "%H:%M"
         ).time()
 

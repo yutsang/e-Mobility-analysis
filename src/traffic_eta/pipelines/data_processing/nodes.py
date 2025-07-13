@@ -9,7 +9,20 @@ from typing import Any
 import pandas as pd
 from database_manager import KMBDatabaseManager
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Constants for Hong Kong boundaries
+HONG_KONG_MIN_LAT = 22.15
+HONG_KONG_MAX_LAT = 22.6
+HONG_KONG_MIN_LNG = 113.8
+HONG_KONG_MAX_LNG = 114.5
+
+# Constants for validation thresholds
+MIN_ROUTES_COUNT = 100
+MIN_STOPS_COUNT = 1000
+MIN_ROUTE_STOPS_COUNT = 5000
 
 
 def process_routes_data(routes_df: pd.DataFrame) -> pd.DataFrame:
@@ -98,7 +111,7 @@ def process_stops_data(stops_df: pd.DataFrame) -> pd.DataFrame:
 def validate_location_data(lat: float, lng: float) -> bool:
     """Validate location coordinates are within Hong Kong bounds."""
     # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
-    return 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5
+    return HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
 
 
 def process_route_stops_data(route_stops_df: pd.DataFrame) -> pd.DataFrame:
@@ -160,17 +173,17 @@ def validate_database_integrity() -> dict[str, Any]:
         }
 
         # Check if we have reasonable data
-        if stats["routes_count"] < 100:
+        if stats["routes_count"] < MIN_ROUTES_COUNT:
             validation_results["issues"].append(
                 f"Low route count: {stats['routes_count']}"
             )
 
-        if stats["stops_count"] < 1000:
+        if stats["stops_count"] < MIN_STOPS_COUNT:
             validation_results["issues"].append(
                 f"Low stop count: {stats['stops_count']}"
             )
 
-        if stats["route_stops_count"] < 5000:
+        if stats["route_stops_count"] < MIN_ROUTE_STOPS_COUNT:
             validation_results["issues"].append(
                 f"Low route-stop count: {stats['route_stops_count']}"
             )
