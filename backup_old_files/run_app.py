@@ -4,14 +4,16 @@ Hong Kong KMB Bus Dashboard Launcher
 This script checks dependencies and launches the Streamlit application.
 """
 
-import sys
-import subprocess
 import importlib.util
+import subprocess
+import sys
+
 
 def check_dependency(package_name):
     """Check if a package is installed"""
     spec = importlib.util.find_spec(package_name)
     return spec is not None
+
 
 def install_dependency(package_name):
     """Install a package using pip"""
@@ -21,32 +23,33 @@ def install_dependency(package_name):
     except subprocess.CalledProcessError:
         return False
 
+
 def main():
     """Main launcher function"""
     print("🚌 Hong Kong KMB Bus Dashboard Launcher")
     print("=" * 50)
-    
+
     # Required packages
     required_packages = [
-        'streamlit',
-        'folium',
-        'pandas',
-        'requests',
-        'streamlit_folium',
-        'plotly',
-        'numpy'
+        "streamlit",
+        "folium",
+        "pandas",
+        "requests",
+        "streamlit_folium",
+        "plotly",
+        "numpy",
     ]
-    
+
     # Check and install missing packages
     missing_packages = []
     for package in required_packages:
         if not check_dependency(package):
             missing_packages.append(package)
-    
+
     if missing_packages:
         print(f"Missing packages: {', '.join(missing_packages)}")
         print("Installing missing packages...")
-        
+
         for package in missing_packages:
             print(f"Installing {package}...")
             if install_dependency(package):
@@ -55,7 +58,7 @@ def main():
                 print(f"❌ Failed to install {package}")
                 print("Please install manually: pip install -r requirements.txt")
                 return
-    
+
     print("✅ All dependencies are installed!")
     print("🚀 Launching Hong Kong KMB Bus Dashboard...")
     print("📱 The app will open in your default web browser")
@@ -63,22 +66,38 @@ def main():
     print("⏹️  Press Ctrl+C to stop the application")
     print("🚌 Focus: KMB/LWB bus services in Kowloon & New Territories")
     print("-" * 50)
-    
+
     try:
         # Launch the Streamlit app (try optimized version first, fallback to enhanced)
         try:
-            subprocess.run([
-                sys.executable, "-m", "streamlit", "run", "hk_transport_optimized.py",
-                "--server.port", "8501",
-                "--server.address", "localhost"
-            ])
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "streamlit",
+                    "run",
+                    "hk_transport_optimized.py",
+                    "--server.port",
+                    "8501",
+                    "--server.address",
+                    "localhost",
+                ]
+            )
         except FileNotFoundError:
             print("Optimized version not found, launching enhanced version...")
-            subprocess.run([
-                sys.executable, "-m", "streamlit", "run", "hk_transport_enhanced.py",
-                "--server.port", "8501",
-                "--server.address", "localhost"
-            ])
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "streamlit",
+                    "run",
+                    "hk_transport_enhanced.py",
+                    "--server.port",
+                    "8501",
+                    "--server.address",
+                    "localhost",
+                ]
+            )
     except KeyboardInterrupt:
         print("\n👋 KMB Bus Dashboard stopped by user")
     except Exception as e:
@@ -88,5 +107,6 @@ def main():
         print("  or")
         print("  streamlit run hk_transport_enhanced.py")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

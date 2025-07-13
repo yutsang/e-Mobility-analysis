@@ -19,8 +19,8 @@
 #
 import re
 
-from kedro.framework.cli.utils import find_stylesheets
 from hk_kmb_transport import __version__ as release
+from kedro.framework.cli.utils import find_stylesheets
 
 # -- Project information -----------------------------------------------------
 

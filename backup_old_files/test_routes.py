@@ -4,19 +4,20 @@ Test script to show available routes with stops
 Demonstrates the improvements made to the KMB route map
 """
 
-from database_manager import KMBDatabaseManager
-from api_connectors import HKTransportAPIManager
 import pandas as pd
+from api_connectors import HKTransportAPIManager
+from database_manager import KMBDatabaseManager
+
 
 def test_routes_with_stops():
     """Test which routes have stops data available"""
-    
+
     print("🚌 Testing KMB Routes with Stops Data")
     print("=" * 50)
-    
+
     # Initialize database manager
     db_manager = KMBDatabaseManager()
-    
+
     # Get database statistics
     stats = db_manager.get_database_stats()
     print(f"Database Statistics:")
@@ -24,12 +25,13 @@ def test_routes_with_stops():
     print(f"  Total Stops: {stats['stops_count']}")
     print(f"  Route-Stops Mappings: {stats['route_stops_count']}")
     print()
-    
+
     # Get routes with stops
     print("🔍 Finding routes with stops data...")
-    
+
     # Query routes that have stops
     import sqlite3
+
     with sqlite3.connect("kmb_data.db") as conn:
         query = """
         SELECT 
@@ -45,19 +47,21 @@ def test_routes_with_stops():
         ORDER BY stop_count DESC
         LIMIT 20
         """
-        
+
         routes_with_stops = pd.read_sql_query(query, conn)
-    
+
     print(f"📋 Top 20 Routes with Most Stops:")
     print("-" * 70)
     for idx, route in routes_with_stops.iterrows():
-        print(f"{route['route_id']:>6} | {route['origin_en']:<20} → {route['destination_en']:<20} | {route['stop_count']:>3} stops")
-    
+        print(
+            f"{route['route_id']:>6} | {route['origin_en']:<20} → {route['destination_en']:<20} | {route['stop_count']:>3} stops"
+        )
+
     print()
     print(f"✅ Total routes with stops data: {len(routes_with_stops)}")
     print(f"🎯 These routes will now show stops and OSM routing on the map!")
     print()
-    
+
     # Show some example route details
     if not routes_with_stops.empty:
         example_route = routes_with_stops.iloc[0]
@@ -65,9 +69,9 @@ def test_routes_with_stops():
         print(f"   From: {example_route['origin_en']}")
         print(f"   To: {example_route['destination_en']}")
         print(f"   Stops: {example_route['stop_count']}")
-        
+
         # Get stops for this route
-        route_stops = db_manager.get_route_stops(example_route['route_id'])
+        route_stops = db_manager.get_route_stops(example_route["route_id"])
         if not route_stops.empty:
             print(f"   Sample stops:")
             for idx, stop in route_stops.head(5).iterrows():
@@ -75,33 +79,34 @@ def test_routes_with_stops():
             if len(route_stops) > 5:
                 print(f"     ... and {len(route_stops) - 5} more stops")
 
+
 def test_osm_waypoint_routing():
     """Test OSM waypoint routing functionality"""
     print("\n🗺️ Testing OSM Waypoint Routing")
     print("=" * 40)
-    
+
     # Test OSM routing through multiple waypoints (like bus stops)
     try:
         import requests
-        
+
         # Sample coordinates representing bus stops (TST → Central → Admiralty)
         waypoints = [
             (22.2988, 114.1722),  # TST
-            (22.2853, 114.1577),  # Central  
+            (22.2853, 114.1577),  # Central
             (22.2786, 114.1652),  # Admiralty
         ]
-        
+
         coords_str = ";".join([f"{lng},{lat}" for lat, lng in waypoints])
         url = f"http://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson"
         response = requests.get(url, timeout=5)
-        
+
         if response.status_code == 200:
             data = response.json()
-            if 'routes' in data and len(data['routes']) > 0:
-                route = data['routes'][0]
-                distance = route['distance'] / 1000  # Convert to km
-                duration = route['duration'] / 60     # Convert to minutes
-                
+            if "routes" in data and len(data["routes"]) > 0:
+                route = data["routes"][0]
+                distance = route["distance"] / 1000  # Convert to km
+                duration = route["duration"] / 60  # Convert to minutes
+
                 print(f"✅ OSM Waypoint Routing Test Successful!")
                 print(f"   Route: TST → Central → Admiralty")
                 print(f"   Waypoints: {len(waypoints)} stops")
@@ -113,14 +118,15 @@ def test_osm_waypoint_routing():
                 print("❌ OSM Waypoint Routing: No route found")
         else:
             print(f"❌ OSM Waypoint Routing: HTTP {response.status_code}")
-            
+
     except Exception as e:
         print(f"❌ OSM Waypoint Routing Error: {e}")
+
 
 if __name__ == "__main__":
     test_routes_with_stops()
     test_osm_waypoint_routing()
-    
+
     print("\n🚀 Enhanced Application Features:")
     print("=" * 40)
     print("✅ Route-stops data populated for 200+ routes")
@@ -139,4 +145,4 @@ if __name__ == "__main__":
     print("📊 NEW: Real-time progress indicators")
     print()
     print("🌐 Access your app at: http://localhost:8508")
-    print("🔄 Just refresh the browser to debug!") 
+    print("🔄 Just refresh the browser to debug!")
