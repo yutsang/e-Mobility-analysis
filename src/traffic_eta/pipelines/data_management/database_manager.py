@@ -20,6 +20,7 @@ HONG_KONG_MAX_LAT = 22.6
 HONG_KONG_MIN_LNG = 113.8
 HONG_KONG_MAX_LNG = 114.5
 
+
 class KMBDatabaseManager:
     """Database manager for KMB routes and stops data"""
 
@@ -177,7 +178,10 @@ class KMBDatabaseManager:
                 lat = float(stop.get("lat", 0))
                 lng = float(stop.get("long", 0))
 
-                if HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG:
+                if (
+                    HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT
+                    and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
+                ):
                     cursor.execute(
                         """
                         INSERT OR REPLACE INTO stops
@@ -428,7 +432,10 @@ class KMBDatabaseManager:
     def validate_location_data(self, lat: float, lng: float) -> bool:
         """Validate location coordinates are within Hong Kong bounds."""
         # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
-        return HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
+        return (
+            HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT
+            and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
+        )
 
     def get_route_info(self, route_id: str) -> Optional[dict[str, Any]]:
         """Get route information."""
