@@ -37,18 +37,17 @@ def clear_cache():
                     logging.info(f"   ✅ Removed {os.path.basename(file)}")
                 except OSError:
                     pass
-        else:
+        elif os.path.exists(pattern):
             # Handle directories
-            if os.path.exists(pattern):
-                try:
-                    if os.path.isdir(pattern):
-                        shutil.rmtree(pattern)
-                        logging.info(f"   ✅ Removed directory {pattern}")
-                    else:
-                        os.remove(pattern)
-                        logging.info(f"   ✅ Removed file {pattern}")
-                except OSError as e:
-                    logging.warning(f"   ⚠️  Could not remove {pattern}: {e}")
+            try:
+                if os.path.isdir(pattern):
+                    shutil.rmtree(pattern)
+                    logging.info(f"   ✅ Removed directory {pattern}")
+                else:
+                    os.remove(pattern)
+                    logging.info(f"   ✅ Removed file {pattern}")
+            except OSError as e:
+                logging.warning(f"   ⚠️  Could not remove {pattern}: {e}")
 
 
 def check_database():
@@ -118,7 +117,8 @@ def main():
                 "true",
                 "--browser.gatherUsageStats",
                 "false",
-            ]
+            ],
+            check=True,
         )
     except KeyboardInterrupt:
         logging.info("\n👋 Production KMB Transport stopped by user")

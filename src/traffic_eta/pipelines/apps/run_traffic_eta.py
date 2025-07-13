@@ -13,6 +13,15 @@ import sys
 
 from kedro.config import OmegaConfigLoader
 
+# Import modules that may not be available at startup
+try:
+    from data_updater import KMBDataUpdater
+    from database_manager import KMBDatabaseManager
+    from pipelines.web_app.nodes import should_update_data
+except ImportError:
+    # These will be imported when needed
+    pass
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
@@ -39,18 +48,17 @@ def clear_cache():
                     logging.info(f"   ✅ Removed {os.path.basename(file)}")
                 except OSError:
                     pass
-        else:
+        elif os.path.exists(pattern):
             # Handle directories
-            if os.path.exists(pattern):
-                try:
-                    if os.path.isdir(pattern):
-                        shutil.rmtree(pattern)
-                        logging.info(f"   ✅ Removed directory {pattern}")
-                    else:
-                        os.remove(pattern)
-                        logging.info(f"   ✅ Removed file {pattern}")
-                except OSError as e:
-                    logging.warning(f"   ⚠️  Could not remove {pattern}: {e}")
+            try:
+                if os.path.isdir(pattern):
+                    shutil.rmtree(pattern)
+                    logging.info(f"   ✅ Removed directory {pattern}")
+                else:
+                    os.remove(pattern)
+                    logging.info(f"   ✅ Removed file {pattern}")
+            except OSError as e:
+                logging.warning(f"   ⚠️  Could not remove {pattern}: {e}")
 
 
 def load_configuration():
@@ -92,15 +100,10 @@ def check_first_run():
 
 def setup_data_update(params):
     """Setup data update process if needed"""
-    from pipelines.web_app.nodes import should_update_data
-
     if should_update_data():
         logging.info("📊 Data update required...")
         try:
             # Import and run data update
-            from data_updater import KMBDataUpdater
-            from database_manager import KMBDatabaseManager
-
             updater = KMBDataUpdater()
             db_manager = KMBDatabaseManager()
 
@@ -140,9 +143,6 @@ def main():
 
     # Clear cache
     clear_cache()
-
-    # Check if first run
-    is_first_run = check_first_run()
 
     # Check database
     logging.info("\n📊 Checking database...")
