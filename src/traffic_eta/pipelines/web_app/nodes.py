@@ -374,9 +374,7 @@ def get_route_geometry_with_progress(
         if params["ui"]["show_progress_bars"]:
             progress_text.text("⚠️ Using direct path (OSM routing unavailable)")
     elif params["ui"]["show_progress_bars"]:
-        progress_text.text(
-            f"✅ Route loaded with {len(all_coordinates)} path points"
-        )
+        progress_text.text(f"✅ Route loaded with {len(all_coordinates)} path points")
 
     if params["ui"]["show_progress_bars"]:
         progress_bar.progress(1.0)

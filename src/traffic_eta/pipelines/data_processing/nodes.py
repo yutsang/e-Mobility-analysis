@@ -111,7 +111,10 @@ def process_stops_data(stops_df: pd.DataFrame) -> pd.DataFrame:
 def validate_location_data(lat: float, lng: float) -> bool:
     """Validate location coordinates are within Hong Kong bounds."""
     # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
-    return HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
+    return (
+        HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT
+        and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
+    )
 
 
 def process_route_stops_data(route_stops_df: pd.DataFrame) -> pd.DataFrame:
