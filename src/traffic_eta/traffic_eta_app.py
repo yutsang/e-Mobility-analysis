@@ -732,6 +732,16 @@ def create_route_options(routes_df):
     
     return options
 
+# Add this helper function near the top of the file:
+def split_name_for_box(name, max_len=25):
+    if len(name) <= max_len:
+        return name
+    mid = len(name) // 2
+    split_at = name.rfind(' ', 0, mid+5)
+    if split_at == -1:
+        split_at = mid
+    return name[:split_at] + '<br>' + name[split_at+1:]
+
 # Main application
 def main():
     # Load data with progress indicator
@@ -844,11 +854,11 @@ def main():
                     </div>
                     <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">📍 From</div>
-                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--orange);">{first_stop[:25] + "..." if len(first_stop) > 25 else first_stop}</div>
+                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--orange);">{split_name_for_box(first_stop)}</div>
                     </div>
                     <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🎯 To</div>
-                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--red);">{last_stop[:25] + "..." if len(last_stop) > 25 else last_stop}</div>
+                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--red);">{split_name_for_box(last_stop)}</div>
                     </div>
                     <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🧭 Direction</div>
@@ -975,7 +985,7 @@ def main():
                         # Create and display map with error handling
                         try:
                             with st.spinner("Loading route map..."):
-                                map_obj = create_enhanced_route_map(direction_stops, None, current_direction)
+                                map_obj = create_enhanced_route_map(direction_stops, st.session_state.get('selected_stop_id'), current_direction)
                                 folium_static(map_obj, width=1200, height=600)
                         except Exception as e:
                             st.error(f"❌ Error creating map: {str(e)}")
@@ -989,60 +999,24 @@ def main():
                     
                     with col2:
                         st.subheader("🚏 Route Stops")
-                        st.markdown("""
-                        <style>
-                        .stops-scroll-container {
-                            height: 550px !important;
-                            max-height: 550px !important;
-                            overflow-y: auto !important;
-                            overflow-x: hidden !important;
-                            padding: 8px !important;
-                            background: var(--bg-secondary) !important;
-                            border-radius: 8px !important;
-                            border: 1px solid var(--border-color) !important;
-                            box-shadow: var(--shadow) !important;
-                            margin-top: 0.5rem !important;
-                        }
-                        .route-stop-card {
-                            display: flex !important;
-                            align-items: center !important;
-                            gap: 8px !important;
-                            padding: 8px !important;
-                            margin-bottom: 1px !important;
-                            min-height: 3rem !important;
-                            background: var(--bg-primary) !important;
-                            border-radius: 6px !important;
-                            border: 1px solid var(--border-color) !important;
-                            box-shadow: var(--shadow) !important;
-                        }
-                        </style>
-                        """, unsafe_allow_html=True)
-
                         if not direction_stops.empty:
-                            stops_html = '<div class="stops-scroll-container">'
-                            for idx, stop in direction_stops.iterrows():
-                                stop_name = str(stop['stop_name']).strip()
-                                stop_id = str(stop['stop_id']).strip()
+                            stops_html = "<div style='height:600px; overflow-y:auto; border:1px solid #e0e0e0; border-radius:8px; background:var(--bg-secondary); padding:8px;'>"
+                            for idx, stop in enumerate(direction_stops.itertuples(), 1):
                                 stops_html += (
-                                    f'<div class="route-stop-card">'
-                                    f'<div style="background: var(--blue); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; flex-shrink: 0;">{stop["sequence"]}</div>'
-                                    f'<div style="flex: 1;">'
-                                    f'<div style="font-weight: bold; color: var(--text-primary); margin-bottom: 3px; font-size: 14px; line-height: 1.3;">{stop_name}</div>'
-                                    f'<div style="color: var(--text-muted); font-size: 12px; line-height: 1.2;">ID: {stop_id}</div>'
-                                    f'</div>'
-                                    f'</div>'
+                                    f"<div style='display:flex; align-items:center; gap:0.75rem; "
+                                    f"padding:0.5rem 0.75rem; border-bottom:1px solid #444; "
+                                    f"background:var(--bg-primary); font-size:1rem; color:var(--text-primary);'>"
+                                    f"<span style='background:#2196f3; color:white; border-radius:50%; "
+                                    f"width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:bold;'>"
+                                    f"{idx}</span>"
+                                    f"<span style='flex:1;'>{stop.stop_name}</span>"
+                                    f"<span style='color:#888; font-size:0.85em;'>ID: {stop.stop_id}</span>"
+                                    f"</div>"
                                 )
-                            stops_html += '</div>'
+                            stops_html += "</div>"
                             st.markdown(stops_html, unsafe_allow_html=True)
                         else:
-                            st.markdown(
-                                '<div class="stops-scroll-container">'
-                                '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">'
-                                '⚠️ No stops found for this route.'
-                                '</div>'
-                                '</div>',
-                                unsafe_allow_html=True
-                            )
+                            st.info("⚠️ No stops found for this route.")
             else:
                 st.warning("⚠️ No stop data available for this route")
     else:
