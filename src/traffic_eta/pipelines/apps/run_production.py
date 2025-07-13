@@ -10,10 +10,11 @@ import os
 import glob
 import shutil
 
+
 def clear_cache():
     """Clear streamlit cache and temporary files"""
     print("🧹 Clearing cache and temporary files...")
-    
+
     # Cache patterns to clear
     cache_patterns = [
         ".streamlit",
@@ -21,9 +22,9 @@ def clear_cache():
         "*.pyc",
         "*.pyo",
         ".cache",
-        "*.cache.json"
+        "*.cache.json",
     ]
-    
+
     for pattern in cache_patterns:
         if "*" in pattern:
             # Handle wildcard patterns
@@ -46,10 +47,11 @@ def clear_cache():
                 except OSError as e:
                     print(f"   ⚠️  Could not remove {pattern}: {e}")
 
+
 def check_database():
     """Check if database exists"""
     db_path = "data/01_raw/kmb_data.db"
-    
+
     if os.path.exists(db_path):
         size_mb = os.path.getsize(db_path) / (1024 * 1024)
         print(f"✅ Database found: {size_mb:.1f} MB")
@@ -57,6 +59,7 @@ def check_database():
     else:
         print(f"❌ Database not found at: {db_path}")
         return False
+
 
 def main():
     """Main launcher function"""
@@ -67,17 +70,17 @@ def main():
     print("🗺️ OSM waypoint routing with progress tracking")
     print("🎨 Theme-adaptive responsive interface")
     print("-" * 70)
-    
+
     # Clear cache
     clear_cache()
-    
+
     # Check database
     print("\n📊 Checking database...")
     if not check_database():
         print("Please ensure the database is properly set up.")
         print("Run: python src/hk_kmb_transport/data_updater.py --all")
         return
-    
+
     print("\n🚀 Launching production KMB Transport app...")
     print("📱 Opening in your default web browser")
     print("🔗 URL: http://localhost:8508")
@@ -90,19 +93,30 @@ def main():
     print("   • Theme-adaptive interface")
     print("   • Complete route coverage (788 routes)")
     print("-" * 70)
-    
+
     try:
         # Launch the production Streamlit app
         app_path = "src/hk_kmb_transport/kmb_app_production.py"
-        
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", app_path,
-            "--server.port", "8508",
-            "--server.address", "localhost",
-            "--server.headless", "true",
-            "--server.runOnSave", "true",
-            "--browser.gatherUsageStats", "false"
-        ])
+
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                app_path,
+                "--server.port",
+                "8508",
+                "--server.address",
+                "localhost",
+                "--server.headless",
+                "true",
+                "--server.runOnSave",
+                "true",
+                "--browser.gatherUsageStats",
+                "false",
+            ]
+        )
     except KeyboardInterrupt:
         print("\n👋 Production KMB Transport stopped by user")
         print("🧹 Cleaning up...")
@@ -112,5 +126,6 @@ def main():
         print("Try running manually:")
         print(f"  streamlit run {app_path} --server.port 8508")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

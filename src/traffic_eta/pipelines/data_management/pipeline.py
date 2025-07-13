@@ -7,7 +7,9 @@ from kedro.pipeline import node, Pipeline, pipeline  # noqa
 
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline([
-        # Data management nodes can be added here when needed
-        # Example: node(func=update_data, inputs=None, outputs="updated_data", name="update_data_node")
-    ]) 
+    return pipeline(
+        [
+            # Data management nodes can be added here when needed
+            # Example: node(func=update_data, inputs=None, outputs="updated_data", name="update_data_node")
+        ]
+    )

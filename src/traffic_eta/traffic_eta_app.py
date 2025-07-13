@@ -26,21 +26,22 @@ try:
         format_route_type_badge,
         should_update_data,
         mark_first_run_complete,
-        get_first_run_status
+        get_first_run_status,
     )
 except ImportError as e:
     print(f"Import error: {e}")
     print(f"Current working directory: {os.getcwd()}")
     print(f"Python path: {sys.path}")
-    
+
     # Fallback: try direct file import
     import importlib.util
-    nodes_path = os.path.join(current_dir, 'pipelines', 'web_app', 'nodes.py')
+
+    nodes_path = os.path.join(current_dir, "pipelines", "web_app", "nodes.py")
     spec = importlib.util.spec_from_file_location("nodes", nodes_path)
     if spec is not None and spec.loader is not None:
         nodes = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(nodes)
-        
+
         # Extract the functions we need
         load_traffic_data = nodes.load_traffic_data
         get_route_stops_with_directions = nodes.get_route_stops_with_directions
@@ -61,14 +62,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
     menu_items={
-        'Get Help': 'https://github.com/your-repo/issues',
-        'Report a bug': 'https://github.com/your-repo/issues',
-        'About': "# Hong Kong Transport Explorer\n\nExplore Hong Kong's public transport routes with interactive maps and real-time information."
-    }
+        "Get Help": "https://github.com/your-repo/issues",
+        "Report a bug": "https://github.com/your-repo/issues",
+        "About": "# Hong Kong Transport Explorer\n\nExplore Hong Kong's public transport routes with interactive maps and real-time information.",
+    },
 )
 
 # Simplified and improved CSS
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* CSS Variables for Theme Support */
     :root {
@@ -682,7 +684,9 @@ st.markdown("""
         }
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Check for first run and data updates
 @st.cache_data(ttl=300)
@@ -696,15 +700,18 @@ def initialize_app():
         st.error(f"Error initializing app: {str(e)}")
         return None, None
 
+
 @st.cache_data(ttl=300)
 def get_cached_route_stops(route_id):
     """Get route stops with caching."""
     return get_route_stops_with_directions(route_id)
 
+
 @st.cache_data(ttl=300)
 def get_cached_route_options(routes_df):
     """Create cached route options from routes dataframe."""
     return create_route_options(routes_df)
+
 
 # Create route options for the dropdown
 def create_route_options(routes_df):
@@ -713,34 +720,36 @@ def create_route_options(routes_df):
     for _, route in routes_df.iterrows():
         # Handle different column names
         try:
-            origin = route['origin']
-            destination = route['destination']
+            origin = route["origin"]
+            destination = route["destination"]
         except KeyError:
-            origin = route['origin_en']
-            destination = route['destination_en']
-        
-        route_type = route.get('route_type', 'Regular')
-        
+            origin = route["origin_en"]
+            destination = route["destination_en"]
+
+        route_type = route.get("route_type", "Regular")
+
         option = {
-            'text': f"{route['route_id']} - {origin} → {destination} [{route_type}]",
-            'route_id': route['route_id'],
-            'origin': origin,
-            'destination': destination,
-            'route_type': route_type
+            "text": f"{route['route_id']} - {origin} → {destination} [{route_type}]",
+            "route_id": route["route_id"],
+            "origin": origin,
+            "destination": destination,
+            "route_type": route_type,
         }
         options.append(option)
-    
+
     return options
+
 
 # Add this helper function near the top of the file:
 def split_name_for_box(name, max_len=25):
     if len(name) <= max_len:
         return name
     mid = len(name) // 2
-    split_at = name.rfind(' ', 0, mid+5)
+    split_at = name.rfind(" ", 0, mid + 5)
     if split_at == -1:
         split_at = mid
-    return name[:split_at] + '<br>' + name[split_at+1:]
+    return name[:split_at] + "<br>" + name[split_at + 1 :]
+
 
 # Main application
 def main():
@@ -756,91 +765,101 @@ def main():
         return
 
     # Initialize session state
-    if 'selected_route' not in st.session_state:
+    if "selected_route" not in st.session_state:
         st.session_state.selected_route = None
-    if 'selected_direction' not in st.session_state:
+    if "selected_direction" not in st.session_state:
         st.session_state.selected_direction = None
-    
+
     # MAIN CONTENT AREA
     st.title("🗺️ Hong Kong Public Transport Explorer")
-    
+
     # Search functionality moved to main content
     st.header("🔍 Search Routes")
-    
+
     # Create route options with caching
     route_options = get_cached_route_options(routes_df)
-    option_texts = ["Select a route and direction..."] + [opt['text'] for opt in route_options]
-    
+    option_texts = ["Select a route and direction..."] + [
+        opt["text"] for opt in route_options
+    ]
+
     # Editable dropdown for route selection
     selected_option = st.selectbox(
         "🚌 Choose Route & Direction",
         option_texts,
-        help="Type to search or select from dropdown"
+        help="Type to search or select from dropdown",
     )
-    
+
     if selected_option != "Select a route and direction...":
         # Find the selected route data
         selected_route_data = None
         for opt in route_options:
-            if opt['text'] == selected_option:
+            if opt["text"] == selected_option:
                 selected_route_data = opt
                 break
-        
+
         if selected_route_data:
-            route_id = selected_route_data['route_id']
+            route_id = selected_route_data["route_id"]
             st.session_state.selected_route = route_id
-            
+
             # Load route stops with caching
             with st.spinner("Loading route details..."):
                 route_stops = get_cached_route_stops(route_id)
-            
+
             if not route_stops.empty:
                 # Get available directions
-                directions = route_stops['direction'].unique()
-                
+                directions = route_stops["direction"].unique()
+
                 # Reset direction if switching routes or if current direction doesn't exist
-                if (st.session_state.get('selected_route') != route_id or 
-                    st.session_state.get('selected_direction') not in directions):
+                if (
+                    st.session_state.get("selected_route") != route_id
+                    or st.session_state.get("selected_direction") not in directions
+                ):
                     st.session_state.selected_direction = directions[0]
-                
+
                 # Get current direction (ensure it's valid and is an integer)
-                current_direction = st.session_state.get('selected_direction', directions[0])
-                
+                current_direction = st.session_state.get(
+                    "selected_direction", directions[0]
+                )
+
                 # Ensure current direction exists in available directions and is an integer
                 if current_direction not in directions:
                     current_direction = directions[0]
                     st.session_state.selected_direction = current_direction
-                
+
                 # Ensure it's an integer
                 try:
                     current_direction = int(current_direction)
                 except (ValueError, TypeError):
                     current_direction = int(directions[0]) if len(directions) > 0 else 1
                     st.session_state.selected_direction = current_direction
-                
+
                 # Debug information (only show in development)
                 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
                 if DEBUG_MODE:
                     with st.expander("Debug Information", expanded=False):
-                        st.write(f"DEBUG: Current direction: {current_direction} (type: {type(current_direction)})")
+                        st.write(
+                            f"DEBUG: Current direction: {current_direction} (type: {type(current_direction)})"
+                        )
                         st.write(f"DEBUG: Available directions: {list(directions)}")
                         st.write(f"DEBUG: Direction stops count: {len(route_stops)}")
                         st.write(f"DEBUG: Total directions: {len(directions)}")
-                
+
                 # Get direction-specific route information
-                direction_stops = route_stops[route_stops['direction'] == current_direction].sort_values('sequence')
-                
+                direction_stops = route_stops[
+                    route_stops["direction"] == current_direction
+                ].sort_values("sequence")
+
                 # Get origin and destination for current direction
                 if not direction_stops.empty:
-                    first_stop = direction_stops.iloc[0]['stop_name']
-                    last_stop = direction_stops.iloc[-1]['stop_name']
+                    first_stop = direction_stops.iloc[0]["stop_name"]
+                    last_stop = direction_stops.iloc[-1]["stop_name"]
                 else:
-                    first_stop = selected_route_data['origin']
-                    last_stop = selected_route_data['destination']
-                
+                    first_stop = selected_route_data["origin"]
+                    last_stop = selected_route_data["destination"]
+
                 # Display route information with integrated switch button
                 st.subheader("Route Information")
-                
+
                 # Create route information using HTML only (no Streamlit columns)
                 route_info_html = f"""
                 <div style="display: flex; gap: 0.5rem; align-items: stretch; margin-bottom: 1rem;">
@@ -867,9 +886,10 @@ def main():
                 </div>
                 """
                 st.markdown(route_info_html, unsafe_allow_html=True)
-                
+
                 # Add ultra-aggressive CSS to eliminate button container backgrounds
-                st.markdown("""
+                st.markdown(
+                    """
                 <style>
                 /* Ultra-aggressive targeting for button containers */
                 .button-row .stColumns {
@@ -945,58 +965,92 @@ def main():
                     background-color: #dc3545 !important; /* Ensure primary button color */
                 }
                 </style>
-                """, unsafe_allow_html=True)
-                
+                """,
+                    unsafe_allow_html=True,
+                )
+
                 # Create buttons with specific CSS class
                 st.markdown('<div class="button-row">', unsafe_allow_html=True)
                 col_search, col_reverse = st.columns([4, 1])
-                
+
                 with col_search:
-                    if st.button("🔍 Search Other Routes", key="search_other_routes", help="Click to search for other routes", use_container_width=True):
+                    if st.button(
+                        "🔍 Search Other Routes",
+                        key="search_other_routes",
+                        help="Click to search for other routes",
+                        use_container_width=True,
+                    ):
                         # Clear current selection to go back to search
                         st.session_state.selected_route = None
                         st.session_state.selected_direction = None
                         st.rerun()
-                
+
                 with col_reverse:
                     # Reverse direction button - use session state approach
                     if len(directions) > 1:
                         # Multiple directions - clickable reverse button
-                        if st.button("🔄 REVERSE", key="reverse_direction_button", help="Reverse route direction", use_container_width=True, type="primary"):
-                            other_directions = [d for d in directions if d != current_direction]
+                        if st.button(
+                            "🔄 REVERSE",
+                            key="reverse_direction_button",
+                            help="Reverse route direction",
+                            use_container_width=True,
+                            type="primary",
+                        ):
+                            other_directions = [
+                                d for d in directions if d != current_direction
+                            ]
                             if other_directions:
-                                st.session_state.selected_direction = other_directions[0]
+                                st.session_state.selected_direction = other_directions[
+                                    0
+                                ]
                                 st.rerun()
                     else:
                         # Single direction - show as disabled button
-                        st.button(f"🧭 Dir {current_direction}", key="direction_display_button", help="Only one direction available", use_container_width=True, disabled=True)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
-                
+                        st.button(
+                            f"🧭 Dir {current_direction}",
+                            key="direction_display_button",
+                            help="Only one direction available",
+                            use_container_width=True,
+                            disabled=True,
+                        )
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
                 st.divider()
-                
+
                 # Create map and route stops layout
                 if not direction_stops.empty:
                     col1, col2 = st.columns([3, 1], gap="medium")
-                    
+
                     with col1:
                         st.subheader("🗺️ Route Map")
-                        
+
                         # Create and display map with error handling
                         try:
                             with st.spinner("Loading route map..."):
-                                map_obj = create_enhanced_route_map(direction_stops, st.session_state.get('selected_stop_id'), current_direction)
+                                map_obj = create_enhanced_route_map(
+                                    direction_stops,
+                                    st.session_state.get("selected_stop_id"),
+                                    current_direction,
+                                )
                                 folium_static(map_obj, width=1200, height=600)
                         except Exception as e:
                             st.error(f"❌ Error creating map: {str(e)}")
-                            st.info("💡 Try refreshing the page or selecting a different route.")
+                            st.info(
+                                "💡 Try refreshing the page or selecting a different route."
+                            )
                             # Only show debug info if in debug mode
                             if os.getenv("DEBUG_MODE", "false").lower() == "true":
-                                st.write(f"Debug info: direction_stops shape: {direction_stops.shape}")
-                                st.write(f"Debug info: current_direction: {current_direction}")
+                                st.write(
+                                    f"Debug info: direction_stops shape: {direction_stops.shape}"
+                                )
+                                st.write(
+                                    f"Debug info: current_direction: {current_direction}"
+                                )
                                 import traceback
+
                                 st.text(traceback.format_exc())
-                    
+
                     with col2:
                         st.subheader("🚏 Route Stops")
                         if not direction_stops.empty:
@@ -1021,32 +1075,40 @@ def main():
                 st.warning("⚠️ No stop data available for this route")
     else:
         # Show welcome message
-        st.markdown("""
+        st.markdown(
+            """
         <div class="welcome-container">
             <div class="welcome-icon">🚌</div>
             <h2>Welcome to Hong Kong Transport Explorer!</h2>
             <p>Select a route from the dropdown above to view its interactive map, route information, and stop details.</p>
             <p><strong>💡 Pro tip:</strong> You can type in the dropdown to quickly find routes!</p>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # Key Statistics section moved to bottom
     st.divider()
     st.header("📊 Key Statistics")
-    
+
     # Try to get all destinations safely
     try:
-        all_destinations = set(routes_df['destination'].dropna().unique()) | set(routes_df['origin'].dropna().unique())
+        all_destinations = set(routes_df["destination"].dropna().unique()) | set(
+            routes_df["origin"].dropna().unique()
+        )
     except KeyError:
-        all_destinations = set(routes_df['destination_en'].dropna().unique()) | set(routes_df['origin_en'].dropna().unique())
-    
+        all_destinations = set(routes_df["destination_en"].dropna().unique()) | set(
+            routes_df["origin_en"].dropna().unique()
+        )
+
     # Calculate statistics
     total_routes = len(routes_df)
     total_stops = len(stops_df) if stops_df is not None and not stops_df.empty else 0
     total_destinations = len(all_destinations)
-    
+
     # Display statistics with simplified HTML
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div class="stats-container">
         <div class="stats-grid">
             <div class="stat-item">
@@ -1063,7 +1125,10 @@ def main():
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 if __name__ == "__main__":
-    main() 
+    main()
