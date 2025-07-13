@@ -688,6 +688,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # Check for first run and data updates
 @st.cache_data(ttl=300)
 def initialize_app():
