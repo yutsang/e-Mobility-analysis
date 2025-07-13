@@ -16,6 +16,9 @@ HK_MAX_LAT = 22.6
 HK_MIN_LNG = 113.8
 HK_MAX_LNG = 114.5
 
+# API constants
+HTTP_OK_STATUS = 200
+
 logger = logging.getLogger(__name__)
 
 
@@ -108,7 +111,7 @@ def fetch_route_stops_sample(
                     url = f"https://data.etabus.gov.hk/v1/transport/kmb/route-stop/{route_id}/{bound}/{service_type}"
 
                     response = requests.get(url, timeout=10)
-                    if response.status_code == 200:
+                    if response.status_code == HTTP_OK_STATUS:
                         data = response.json()
                         if data["type"] == "RouteStopList" and data["data"]:
                             route_stops.extend(data["data"])
@@ -152,7 +155,7 @@ def process_stop_data(stops_data: list[dict[str, Any]]) -> pd.DataFrame:
 
 def validate_api_response(response: requests.Response) -> bool:
     """Validate API response status and content."""
-    if response.status_code != 200:
+    if response.status_code != HTTP_OK_STATUS:
         logger.error(f"API request failed with status {response.status_code}")
         return False
 

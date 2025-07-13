@@ -200,36 +200,31 @@ def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
         return []
 
 
-def natural_sort_key(route_id: str) -> Tuple:
-    """Create a natural sorting key for route IDs (1, 2, 3, 10, 11, 101, etc.)"""
-    parts = re.split(r"(\d+)", str(route_id))
-    result = []
-    for part in parts:
-        if part.isdigit():
-            result.append(int(part))
-        else:
-            result.append(part)
-    return tuple(result)
+def natural_sort_key(route_id: str) -> tuple[int, str]:
+    """Create a natural sort key for route IDs"""
+    # Extract numeric and non-numeric parts
+    import re
+
+    match = re.match(r"(\d+)(.*)", route_id)
+    if match:
+        number = int(match.group(1))
+        suffix = match.group(2)
+        return (number, suffix)
+    return (0, route_id)
 
 
 def get_sorted_routes(routes_df: pd.DataFrame) -> pd.DataFrame:
-    """Sort routes naturally (1, 2, 3, 10, 11, 101, etc.)"""
-    if routes_df.empty:
-        return routes_df
-
-    # Create a copy and add sort key
-    sorted_routes = routes_df.copy()
-    sorted_routes["sort_key"] = sorted_routes["route_id"].apply(natural_sort_key)
-
-    # Sort by the key and drop it
-    sorted_routes = sorted_routes.sort_values("sort_key").drop("sort_key", axis=1)
-
-    return sorted_routes
+    """Sort routes using natural sort order"""
+    routes_df = routes_df.copy()
+    routes_df["sort_key"] = routes_df["route_id"].apply(natural_sort_key)
+    routes_df = routes_df.sort_values("sort_key")
+    routes_df = routes_df.drop("sort_key", axis=1)
+    return routes_df
 
 
 def search_routes_with_directions(
     routes_df: pd.DataFrame, search_term: str
-) -> List[Dict]:
+) -> list[dict[str, Any]]:
     """Search routes and return both directions with depot names"""
     if not search_term:
         return []

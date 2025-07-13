@@ -349,7 +349,7 @@ def main():
 
     if args.status:
         status = updater.get_update_status()
-        logging.info(f"Database Status:")
+        logging.info("Database Status:")
         logging.info(f"  Routes: {status['routes_count']}")
         logging.info(f"  Stops: {status['stops_count']}")
         logging.info(f"  Route-Stops: {status['route_stops_count']}")

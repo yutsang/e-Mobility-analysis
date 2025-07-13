@@ -174,11 +174,11 @@ class HKTransportAPIManager:
     def __init__(self):
         self.kmb_lwb = KMBLWBConnector()
 
-    def get_all_routes(self) -> Dict[str, pd.DataFrame]:
+    def get_all_routes(self) -> dict[str, pd.DataFrame]:
         """Get routes from KMB/LWB"""
         return {"KMB/LWB": self.kmb_lwb.get_routes()}
 
-    def get_all_stops(self) -> Dict[str, pd.DataFrame]:
+    def get_all_stops(self) -> dict[str, pd.DataFrame]:
         """Get stops from KMB/LWB"""
         return {"KMB/LWB": self.kmb_lwb.get_stops()}
 
@@ -194,6 +194,6 @@ class HKTransportAPIManager:
         """Get ETA for a specific KMB/LWB stop"""
         return self.kmb_lwb.get_stop_eta(stop_id, route_id)
 
-    def get_service_status(self) -> Dict:
+    def get_service_status(self) -> dict[str, Any]:
         """Get service status for KMB/LWB"""
         return {"KMB/LWB": {"status": "Normal Service"}}

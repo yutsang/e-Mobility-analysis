@@ -6,7 +6,6 @@ Only ETA data is fetched from the API in real-time.
 """
 
 import logging
-import os
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -303,7 +302,7 @@ class KMBDatabaseManager:
                 query, conn, params=(route_id, direction, service_type)
             )
 
-    def get_database_stats(self) -> Dict:
+    def get_database_stats(self) -> dict[str, Any]:
         """
         Get database statistics
 
