@@ -1,29 +1,28 @@
 """
 Hong Kong KMB Transport - Production App
-Production-ready Streamlit app with all fixes and improvements
+Enhanced Streamlit application for exploring KMB bus routes and stops
 """
 
 import os
 import sys
 
-import folium
-import pandas as pd
-import streamlit as st
-from streamlit_folium import folium_static
-
-# Constants
-MAX_NAME_LENGTH = 20
-TRUNCATED_SUFFIX = "..."
-
 # Add the pipelines to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines", "web_app"))
 
+import folium
+import pandas as pd
+import streamlit as st
 from pipelines.web_app.nodes import (
     create_enhanced_route_map,
     get_route_stops_with_directions,
     get_sorted_routes,
     load_traffic_data,
 )
+from streamlit_folium import folium_static
+
+# Constants
+MAX_NAME_LENGTH = 20
+TRUNCATED_SUFFIX = "..."
 
 # Page configuration
 st.set_page_config(

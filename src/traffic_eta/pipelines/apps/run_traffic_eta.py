@@ -192,7 +192,8 @@ def main():
                 "true",
                 "--browser.gatherUsageStats",
                 "false",
-            ]
+            ],
+            check=True,
         )
     except KeyboardInterrupt:
         logging.info("\n👋 Traffic ETA stopped by user")

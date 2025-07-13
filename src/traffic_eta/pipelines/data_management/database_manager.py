@@ -1,8 +1,6 @@
 """
-Database Manager for KMB Transportation Data
-
-This module handles local storage of KMB routes and stops data using SQLite.
-Only ETA data is fetched from the API in real-time.
+Hong Kong KMB/LWB Bus Database Manager
+Manages SQLite database for KMB/LWB bus routes, stops, and route-stops data
 """
 
 import logging
@@ -12,10 +10,15 @@ from typing import Any, Optional
 
 import pandas as pd
 
-# Setup logging
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Constants for Hong Kong boundaries
+HONG_KONG_MIN_LAT = 22.15
+HONG_KONG_MAX_LAT = 22.6
+HONG_KONG_MIN_LNG = 113.8
+HONG_KONG_MAX_LNG = 114.5
 
 class KMBDatabaseManager:
     """Database manager for KMB routes and stops data"""
@@ -136,7 +139,7 @@ class KMBDatabaseManager:
             for route in routes_data:
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO routes 
+                    INSERT OR REPLACE INTO routes
                     (route_id, route_name, origin_en, destination_en, service_type, company, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
@@ -174,10 +177,10 @@ class KMBDatabaseManager:
                 lat = float(stop.get("lat", 0))
                 lng = float(stop.get("long", 0))
 
-                if 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5:
+                if HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG:
                     cursor.execute(
                         """
-                        INSERT OR REPLACE INTO stops 
+                        INSERT OR REPLACE INTO stops
                         (stop_id, stop_name_en, lat, lng, company, updated_at)
                         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
@@ -210,7 +213,7 @@ class KMBDatabaseManager:
 
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO route_stops 
+                    INSERT OR REPLACE INTO route_stops
                     (route_id, stop_id, direction, service_type, sequence, updated_at)
                     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
@@ -237,7 +240,7 @@ class KMBDatabaseManager:
         """
         with sqlite3.connect(self.db_path) as conn:
             query = """
-                SELECT 
+                SELECT
                     route_id,
                     route_name,
                     origin_en as origin,
@@ -258,7 +261,7 @@ class KMBDatabaseManager:
         """
         with sqlite3.connect(self.db_path) as conn:
             query = """
-                SELECT 
+                SELECT
                     stop_id,
                     stop_name_en as stop_name,
                     lat,
@@ -285,7 +288,7 @@ class KMBDatabaseManager:
         """
         with sqlite3.connect(self.db_path) as conn:
             query = """
-                SELECT 
+                SELECT
                     rs.route_id,
                     rs.stop_id,
                     s.stop_name_en as stop_name,
@@ -414,12 +417,10 @@ class KMBDatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """
-                DELETE FROM data_updates 
-                WHERE updated_at < datetime('now', '-{} days')
-            """.format(
-                    days_to_keep
-                )
+                f"""
+                DELETE FROM data_updates
+                WHERE updated_at < datetime('now', '-{days_to_keep} days')
+            """
             )
             conn.commit()
             logger.info(f"Cleaned up update logs older than {days_to_keep} days")
@@ -427,7 +428,7 @@ class KMBDatabaseManager:
     def validate_location_data(self, lat: float, lng: float) -> bool:
         """Validate location coordinates are within Hong Kong bounds."""
         # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
-        return 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5
+        return HONG_KONG_MIN_LAT <= lat <= HONG_KONG_MAX_LAT and HONG_KONG_MIN_LNG <= lng <= HONG_KONG_MAX_LNG
 
     def get_route_info(self, route_id: str) -> Optional[dict[str, Any]]:
         """Get route information."""

@@ -17,6 +17,9 @@ from database_manager import KMBDatabaseManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# HTTP status codes
+HTTP_OK = 200
+
 
 class HKTransportAPIs:
     """Main class to handle KMB/LWB transport API connections"""
@@ -138,7 +141,7 @@ class KMBLWBConnector:
 
             logger.info(f"KMB Stop ETA API Response Status: {response.status_code}")
 
-            if response.status_code == 200:
+            if response.status_code == HTTP_OK:
                 data = response.json()
 
                 if "data" in data:

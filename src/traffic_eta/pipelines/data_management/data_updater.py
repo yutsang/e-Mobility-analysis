@@ -1,19 +1,19 @@
 """
-Data Updater for KMB Transportation Data
-
-This script fetches KMB routes and stops data from the official API
-and stores it in the local database for offline use.
+Hong Kong KMB/LWB Bus Data Updater
+Updates local database with routes, stops, and route-stops data from KMB/LWB API
 """
 
+import argparse
 import logging
 import sys
 import time
 from typing import Any, Optional
 
 import requests
-from database_manager import KMBDatabaseManager
 
-# Setup logging
+from .database_manager import KMBDatabaseManager
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -325,9 +325,6 @@ class KMBDataUpdater:
 
 def main():
     """Main function for command-line usage"""
-    import argparse
-    import logging
-
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     parser = argparse.ArgumentParser(description="Update KMB transportation data")
