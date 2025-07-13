@@ -248,36 +248,33 @@ jobs:
         echo "Production URL: https://traffic-eta.streamlit.app"
     
     - name: Create GitHub Release
-      uses: actions/create-release@v1
+      run: |
+        gh release create v${{ github.run_number }} \
+          --title "Traffic ETA v${{ github.run_number }}" \
+          --notes "## Traffic ETA Release v${{ github.run_number }}
+        
+        ### 🚌 Features
+        - Complete Hong Kong KMB route coverage
+        - Dual direction search with depot names
+        - Route type classification (Express, Night, Circular, etc.)
+        - Interactive maps with OSM routing
+        - Auto-zoom and center controls
+        - Enhanced search and filtering
+        
+        ### 🔧 Technical Improvements
+        - Kedro-based architecture
+        - Comprehensive parameter configuration
+        - First-run setup and daily updates
+        - Production-ready deployment
+        
+        ### 📊 Statistics
+        - Routes: 788 (100% coverage)
+        - Route Types: Regular, Express, Night, Circular, Airport, Peak, Special
+        - Interactive Maps: OSM routing with waypoints
+        - Search: Dual direction with depot names" \
+          --repo ${{ github.repository }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Traffic ETA v${{ github.run_number }}
-        body: |
-          ## Traffic ETA Release v${{ github.run_number }}
-          
-          ### 🚌 Features
-          - Complete Hong Kong KMB route coverage
-          - Dual direction search with depot names
-          - Route type classification (Express, Night, Circular, etc.)
-          - Interactive maps with OSM routing
-          - Auto-zoom and center controls
-          - Enhanced search and filtering
-          
-          ### 🔧 Technical Improvements
-          - Kedro-based architecture
-          - Comprehensive parameter configuration
-          - First-run setup and daily updates
-          - Production-ready deployment
-          
-          ### 📊 Statistics
-          - Routes: 788 (100% coverage)
-          - Route Types: Regular, Express, Night, Circular, Airport, Peak, Special
-          - Interactive Maps: OSM routing with waypoints
-          - Search: Dual direction with depot names
-        draft: false
-        prerelease: false
 
   notification:
     runs-on: ubuntu-latest
