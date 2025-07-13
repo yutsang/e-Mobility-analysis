@@ -7,8 +7,7 @@ Uses local database for routes and stops, only fetches ETA data from API
 import json
 import logging
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional
 
 import pandas as pd
 import requests
@@ -48,7 +47,7 @@ class HKTransportAPIs:
         self.cache = {}
         self.cache_timeout = 60  # seconds
 
-    def _make_request(self, url: str, timeout: int = 10) -> Optional[Dict]:
+    def _make_request(self, url: str, timeout: int = 10) -> Optional[dict[str, Any]]:
         """Make HTTP request with error handling"""
         try:
             response = self.session.get(url, timeout=timeout)
@@ -61,7 +60,7 @@ class HKTransportAPIs:
             logger.warning(f"JSON decode error for {url}: {e}")
             return None
 
-    def _get_cached_data(self, key: str) -> Optional[Dict]:
+    def _get_cached_data(self, key: str) -> Optional[dict[str, Any]]:
         """Get cached data if not expired"""
         if key in self.cache:
             data, timestamp = self.cache[key]
@@ -69,7 +68,7 @@ class HKTransportAPIs:
                 return data
         return None
 
-    def _cache_data(self, key: str, data: Dict):
+    def _cache_data(self, key: str, data: dict[str, Any]):
         """Cache data with timestamp"""
         self.cache[key] = (data, time.time())
 

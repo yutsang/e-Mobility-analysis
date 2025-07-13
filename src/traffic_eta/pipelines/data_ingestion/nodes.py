@@ -5,15 +5,21 @@ generated using Kedro 0.19.14
 
 import logging
 import time
-from typing import Dict, List
+from typing import Any
 
 import pandas as pd
 import requests
 
+# Hong Kong geographic bounds constants
+HK_MIN_LAT = 22.15
+HK_MAX_LAT = 22.6
+HK_MIN_LNG = 113.8
+HK_MAX_LNG = 114.5
+
 logger = logging.getLogger(__name__)
 
 
-def fetch_kmb_routes() -> List[Dict]:
+def fetch_kmb_routes() -> list[dict[str, Any]]:
     """
     Fetch all KMB routes from the official API
 
@@ -40,7 +46,7 @@ def fetch_kmb_routes() -> List[Dict]:
         return []
 
 
-def fetch_kmb_stops() -> List[Dict]:
+def fetch_kmb_stops() -> list[dict[str, Any]]:
     """
     Fetch all KMB stops from the official API
 
@@ -61,7 +67,7 @@ def fetch_kmb_stops() -> List[Dict]:
             for stop in stops:
                 lat = float(stop.get("lat", 0))
                 lng = float(stop.get("long", 0))
-                if 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5:
+                if HK_MIN_LAT <= lat <= HK_MAX_LAT and HK_MIN_LNG <= lng <= HK_MAX_LNG:
                     hk_stops.append(stop)
 
             logger.info(f"Successfully fetched {len(hk_stops)} HK stops from KMB API")
@@ -75,7 +81,9 @@ def fetch_kmb_stops() -> List[Dict]:
         return []
 
 
-def fetch_route_stops_sample(routes: List[Dict], max_routes: int = 50) -> List[Dict]:
+def fetch_route_stops_sample(
+    routes: list[dict[str, Any]], max_routes: int = 50
+) -> list[dict[str, Any]]:
     """
     Fetch route-stop mappings for a sample of routes
 
@@ -124,3 +132,36 @@ def fetch_route_stops_sample(routes: List[Dict], max_routes: int = 50) -> List[D
     except Exception as e:
         logger.error(f"Error fetching route-stops: {e}")
         return []
+
+
+def validate_location_data(lat: float, lng: float) -> bool:
+    """Validate location coordinates are within Hong Kong bounds."""
+    # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
+    return HK_MIN_LAT <= lat <= HK_MAX_LAT and HK_MIN_LNG <= lng <= HK_MAX_LNG
+
+
+def process_route_data(routes_data: list[dict[str, Any]]) -> pd.DataFrame:
+    """Process raw route data into a structured DataFrame."""
+    # ... existing code ...
+
+
+def process_stop_data(stops_data: list[dict[str, Any]]) -> pd.DataFrame:
+    """Process raw stop data into a structured DataFrame."""
+    # ... existing code ...
+
+
+def validate_api_response(response: requests.Response) -> bool:
+    """Validate API response status and content."""
+    if response.status_code != 200:
+        logger.error(f"API request failed with status {response.status_code}")
+        return False
+
+    try:
+        data = response.json()
+        if not isinstance(data, dict) or "data" not in data:
+            logger.error("Invalid API response format")
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Failed to parse API response: {e}")
+        return False

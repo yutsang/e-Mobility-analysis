@@ -6,10 +6,14 @@ Production-ready Streamlit app with all fixes and improvements
 import os
 import sys
 
+import folium
 import pandas as pd
 import streamlit as st
 from streamlit_folium import folium_static
-import folium
+
+# Constants
+MAX_NAME_LENGTH = 20
+TRUNCATED_SUFFIX = "..."
 
 # Add the pipelines to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines", "web_app"))
@@ -102,10 +106,12 @@ def format_route_option(route_row):
     origin = route_row.get("origin", "N/A")
     destination = route_row.get("destination", "N/A")
     # Truncate long names
-    if len(origin) > 20:
-        origin = origin[:17] + "..."
-    if len(destination) > 20:
-        destination = destination[:17] + "..."
+    if len(origin) > MAX_NAME_LENGTH:
+        origin = origin[: MAX_NAME_LENGTH - len(TRUNCATED_SUFFIX)] + TRUNCATED_SUFFIX
+    if len(destination) > MAX_NAME_LENGTH:
+        destination = (
+            destination[: MAX_NAME_LENGTH - len(TRUNCATED_SUFFIX)] + TRUNCATED_SUFFIX
+        )
 
     return f"{route_row['route_id']} | {origin} → {destination}"
 

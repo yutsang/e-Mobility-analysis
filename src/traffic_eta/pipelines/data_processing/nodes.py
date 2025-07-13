@@ -4,7 +4,7 @@ generated using Kedro 0.19.14
 """
 
 import logging
-from typing import Dict, List
+from typing import Any
 
 import pandas as pd
 from database_manager import KMBDatabaseManager
@@ -12,27 +12,27 @@ from database_manager import KMBDatabaseManager
 logger = logging.getLogger(__name__)
 
 
-def process_routes_data(raw_routes: List[Dict]) -> int:
+def process_routes_data(routes_df: pd.DataFrame) -> pd.DataFrame:
     """
     Process and store routes data in the database
 
     Args:
-        raw_routes: Raw routes data from API
+        routes_df: DataFrame containing routes data
 
     Returns:
-        Number of routes processed
+        Processed routes DataFrame
     """
     try:
         db_manager = KMBDatabaseManager()
 
         # Clean and transform routes data
         processed_routes = []
-        for route in raw_routes:
+        for _, row in routes_df.iterrows():
             processed_route = {
-                "route": route.get("route"),
-                "dest_en": route.get("dest_en"),
-                "orig_en": route.get("orig_en"),
-                "service_type": route.get("service_type", 1),
+                "route": row["route"],
+                "dest_en": row["dest_en"],
+                "orig_en": row["orig_en"],
+                "service_type": row["service_type"],
             }
 
             # Only include routes with valid data
@@ -42,39 +42,39 @@ def process_routes_data(raw_routes: List[Dict]) -> int:
         # Store in database
         count = db_manager.insert_routes(processed_routes)
         logger.info(f"Processed and stored {count} routes")
-        return count
+        return routes_df
 
     except Exception as e:
         logger.error(f"Error processing routes data: {e}")
-        return 0
+        return routes_df
 
 
-def process_stops_data(raw_stops: List[Dict]) -> int:
+def process_stops_data(stops_df: pd.DataFrame) -> pd.DataFrame:
     """
     Process and store stops data in the database
 
     Args:
-        raw_stops: Raw stops data from API
+        stops_df: DataFrame containing stops data
 
     Returns:
-        Number of stops processed
+        Processed stops DataFrame
     """
     try:
         db_manager = KMBDatabaseManager()
 
         # Clean and transform stops data
         processed_stops = []
-        for stop in raw_stops:
+        for _, row in stops_df.iterrows():
             # Validate coordinates
             try:
-                lat = float(stop.get("lat", 0))
-                lng = float(stop.get("long", 0))
+                lat = float(row["lat"])
+                lng = float(row["long"])
 
                 # Only include stops with valid coordinates in Hong Kong
-                if 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5:
+                if validate_location_data(lat, lng):
                     processed_stop = {
-                        "stop": stop.get("stop"),
-                        "name_en": stop.get("name_en"),
+                        "stop": row["stop"],
+                        "name_en": row["name_en"],
                         "lat": lat,
                         "long": lng,
                     }
@@ -88,35 +88,41 @@ def process_stops_data(raw_stops: List[Dict]) -> int:
         # Store in database
         count = db_manager.insert_stops(processed_stops)
         logger.info(f"Processed and stored {count} stops")
-        return count
+        return stops_df
 
     except Exception as e:
         logger.error(f"Error processing stops data: {e}")
-        return 0
+        return stops_df
 
 
-def process_route_stops_data(raw_route_stops: List[Dict]) -> int:
+def validate_location_data(lat: float, lng: float) -> bool:
+    """Validate location coordinates are within Hong Kong bounds."""
+    # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
+    return 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5
+
+
+def process_route_stops_data(route_stops_df: pd.DataFrame) -> pd.DataFrame:
     """
     Process and store route-stops mapping data in the database
 
     Args:
-        raw_route_stops: Raw route-stops data from API
+        route_stops_df: DataFrame containing route-stops data
 
     Returns:
-        Number of route-stops processed
+        Processed route-stops DataFrame
     """
     try:
         db_manager = KMBDatabaseManager()
 
         # Clean and transform route-stops data
         processed_route_stops = []
-        for route_stop in raw_route_stops:
+        for _, row in route_stops_df.iterrows():
             processed_route_stop = {
-                "route": route_stop.get("route"),
-                "stop": route_stop.get("stop"),
-                "bound": route_stop.get("bound", "O"),
-                "seq": route_stop.get("seq", 0),
-                "service_type": route_stop.get("service_type", 1),
+                "route": row["route"],
+                "stop": row["stop"],
+                "bound": row["bound"],
+                "seq": row["seq"],
+                "service_type": row["service_type"],
             }
 
             # Only include valid mappings
@@ -126,14 +132,14 @@ def process_route_stops_data(raw_route_stops: List[Dict]) -> int:
         # Store in database
         count = db_manager.insert_route_stops(processed_route_stops)
         logger.info(f"Processed and stored {count} route-stop mappings")
-        return count
+        return route_stops_df
 
     except Exception as e:
         logger.error(f"Error processing route-stops data: {e}")
-        return 0
+        return route_stops_df
 
 
-def validate_database_integrity() -> Dict:
+def validate_database_integrity() -> dict[str, Any]:
     """
     Validate the integrity of the processed data in the database
 
@@ -189,7 +195,7 @@ def validate_database_integrity() -> Dict:
         return {"is_valid": False, "error": str(e)}
 
 
-def create_sample_data_for_testing() -> Dict:
+def create_sample_data_for_testing() -> dict[str, Any]:
     """
     Create sample data for testing when API is unavailable
 
@@ -312,3 +318,22 @@ def create_sample_data_for_testing() -> Dict:
     except Exception as e:
         logger.error(f"Error creating sample data: {e}")
         return {"success": False, "error": str(e)}
+
+
+def create_route_summary(
+    routes_df: pd.DataFrame, route_stops_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Create route summary statistics."""
+    # ... existing code ...
+
+
+def validate_data_quality(df: pd.DataFrame, min_records: int = 100) -> bool:
+    """Validate data quality metrics."""
+    # ... existing code ...
+
+
+def create_stop_summary(
+    stops_df: pd.DataFrame, route_stops_df: pd.DataFrame
+) -> dict[str, Any]:
+    """Create stop summary statistics."""
+    # ... existing code ...

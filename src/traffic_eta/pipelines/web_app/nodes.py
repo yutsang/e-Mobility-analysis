@@ -7,14 +7,13 @@ import logging
 import os
 import re
 import sqlite3
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import folium
 import pandas as pd
 import requests
 import streamlit as st
 from kedro.config import OmegaConfigLoader
-from streamlit_folium import folium_static
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +35,7 @@ MAX_WAYPOINTS = params["osm"]["max_waypoints"]
 OSM_TIMEOUT = params["osm"]["timeout"]
 
 
-def load_traffic_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
+def load_traffic_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load traffic route and stop data from database"""
     try:
         with sqlite3.connect(DB_PATH) as conn:
@@ -135,7 +134,7 @@ def get_route_stops_with_directions(route_id: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def get_route_directions_with_depots(route_id: str) -> List[Dict]:
+def get_route_directions_with_depots(route_id: str) -> list[dict[str, Any]]:
     """Get route directions with proper depot names (origin/destination)"""
     try:
         with sqlite3.connect(DB_PATH) as conn:

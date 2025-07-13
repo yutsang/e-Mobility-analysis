@@ -3,10 +3,13 @@ Traffic ETA - Production Application
 Enhanced Hong Kong public transport route explorer with comprehensive features
 """
 
+import logging
 import os
 import sys
 
-import pandas as pd
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+
 import streamlit as st
 from streamlit_folium import folium_static
 
@@ -30,9 +33,9 @@ try:
         should_update_data,
     )
 except ImportError as e:
-    print(f"Import error: {e}")
-    print(f"Current working directory: {os.getcwd()}")
-    print(f"Python path: {sys.path}")
+    logging.error(f"Import error: {e}")
+    logging.error(f"Current working directory: {os.getcwd()}")
+    logging.error(f"Python path: {sys.path}")
 
     # Fallback: try direct file import
     import importlib.util

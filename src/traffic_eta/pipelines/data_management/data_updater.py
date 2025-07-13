@@ -8,8 +8,7 @@ and stores it in the local database for offline use.
 import logging
 import sys
 import time
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 from database_manager import KMBDatabaseManager
@@ -43,7 +42,7 @@ class KMBDataUpdater:
             {"User-Agent": "KMB-Dashboard/1.0", "Accept": "application/json"}
         )
 
-    def fetch_routes(self) -> List[Dict]:
+    def fetch_routes(self) -> list[dict[str, Any]]:
         """
         Fetch all KMB routes from the API
 
@@ -71,7 +70,7 @@ class KMBDataUpdater:
             logger.error(f"Unexpected error fetching routes: {e}")
             return []
 
-    def fetch_stops(self) -> List[Dict]:
+    def fetch_stops(self) -> list[dict[str, Any]]:
         """
         Fetch all KMB stops from the API
 
@@ -101,7 +100,7 @@ class KMBDataUpdater:
 
     def fetch_route_stops(
         self, route_id: str, direction: str = "outbound", service_type: int = 1
-    ) -> List[Dict]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch stops for a specific route from the API
 
@@ -131,7 +130,9 @@ class KMBDataUpdater:
             logger.warning(f"Unexpected error fetching route stops for {route_id}: {e}")
             return []
 
-    def fetch_all_route_stops(self, routes: List[Dict]) -> List[Dict]:
+    def fetch_all_route_stops(
+        self, routes: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Fetch stops for all routes (with rate limiting)
 
@@ -302,7 +303,7 @@ class KMBDataUpdater:
 
         return success
 
-    def get_update_status(self) -> Dict:
+    def get_update_status(self) -> dict[str, Any]:
         """
         Get database update status
 
@@ -325,6 +326,9 @@ class KMBDataUpdater:
 def main():
     """Main function for command-line usage"""
     import argparse
+    import logging
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     parser = argparse.ArgumentParser(description="Update KMB transportation data")
     parser.add_argument("--routes", action="store_true", help="Update routes only")
@@ -345,13 +349,13 @@ def main():
 
     if args.status:
         status = updater.get_update_status()
-        print(f"Database Status:")
-        print(f"  Routes: {status['routes_count']}")
-        print(f"  Stops: {status['stops_count']}")
-        print(f"  Route-Stops: {status['route_stops_count']}")
-        print(f"  Last Routes Update: {status['last_routes_update']}")
-        print(f"  Last Stops Update: {status['last_stops_update']}")
-        print(f"  Data is stale: {status['is_stale']}")
+        logging.info(f"Database Status:")
+        logging.info(f"  Routes: {status['routes_count']}")
+        logging.info(f"  Stops: {status['stops_count']}")
+        logging.info(f"  Route-Stops: {status['route_stops_count']}")
+        logging.info(f"  Last Routes Update: {status['last_routes_update']}")
+        logging.info(f"  Last Stops Update: {status['last_stops_update']}")
+        logging.info(f"  Data is stale: {status['is_stale']}")
         return
 
     if args.routes:
@@ -363,7 +367,7 @@ def main():
     elif args.all:
         updater.update_all_data(args.max_routes)
     else:
-        print(
+        logging.error(
             "Please specify what to update: --routes, --stops, --route-stops, --all, or --status"
         )
 

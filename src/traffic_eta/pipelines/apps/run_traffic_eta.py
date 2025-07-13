@@ -5,15 +5,15 @@ Launches the production-ready Traffic ETA application with all enhancements
 """
 
 import glob
+import logging
 import os
 import shutil
 import subprocess
 import sys
-import logging
 
 from kedro.config import OmegaConfigLoader
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def clear_cache():

@@ -5,13 +5,13 @@ Launches the production-ready Kedro-based application
 """
 
 import glob
+import logging
 import os
 import shutil
 import subprocess
 import sys
-import logging
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def clear_cache():

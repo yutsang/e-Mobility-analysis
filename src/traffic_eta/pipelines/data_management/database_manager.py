@@ -9,7 +9,7 @@ import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import pandas as pd
 
@@ -120,7 +120,7 @@ class KMBDatabaseManager:
             conn.commit()
             logger.info("Database initialized successfully")
 
-    def insert_routes(self, routes_data: List[Dict]) -> int:
+    def insert_routes(self, routes_data: list[dict[str, Any]]) -> int:
         """
         Insert or update routes data
 
@@ -156,7 +156,7 @@ class KMBDatabaseManager:
             logger.info(f"Inserted/updated {updated_count} routes")
             return updated_count
 
-    def insert_stops(self, stops_data: List[Dict]) -> int:
+    def insert_stops(self, stops_data: list[dict[str, Any]]) -> int:
         """
         Insert or update stops data
 
@@ -190,7 +190,7 @@ class KMBDatabaseManager:
             logger.info(f"Inserted/updated {updated_count} stops")
             return updated_count
 
-    def insert_route_stops(self, route_stops_data: List[Dict]) -> int:
+    def insert_route_stops(self, route_stops_data: list[dict[str, Any]]) -> int:
         """
         Insert or update route-stops mapping data
 
@@ -424,3 +424,16 @@ class KMBDatabaseManager:
             )
             conn.commit()
             logger.info(f"Cleaned up update logs older than {days_to_keep} days")
+
+    def validate_location_data(self, lat: float, lng: float) -> bool:
+        """Validate location coordinates are within Hong Kong bounds."""
+        # Hong Kong bounds: 22.15-22.6°N, 113.8-114.5°E
+        return 22.15 <= lat <= 22.6 and 113.8 <= lng <= 114.5
+
+    def get_route_info(self, route_id: str) -> Optional[dict[str, Any]]:
+        """Get route information."""
+        # ... existing code ...
+
+    def format_query(self, query: str, params: dict[str, Any]) -> str:
+        """Format SQL query with parameters."""
+        # ... existing code ...
