@@ -9,13 +9,16 @@ import os
 import shutil
 import subprocess
 import sys
+import logging
 
 from kedro.config import OmegaConfigLoader
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 
 def clear_cache():
     """Clear streamlit cache and temporary files"""
-    print("🧹 Clearing cache and temporary files...")
+    logging.info("🧹 Clearing cache and temporary files...")
 
     # Cache patterns to clear
     cache_patterns = [
@@ -33,7 +36,7 @@ def clear_cache():
             for file in glob.glob(f"**/{pattern}", recursive=True):
                 try:
                     os.remove(file)
-                    print(f"   ✅ Removed {os.path.basename(file)}")
+                    logging.info(f"   ✅ Removed {os.path.basename(file)}")
                 except OSError:
                     pass
         else:
@@ -42,12 +45,12 @@ def clear_cache():
                 try:
                     if os.path.isdir(pattern):
                         shutil.rmtree(pattern)
-                        print(f"   ✅ Removed directory {pattern}")
+                        logging.info(f"   ✅ Removed directory {pattern}")
                     else:
                         os.remove(pattern)
-                        print(f"   ✅ Removed file {pattern}")
+                        logging.info(f"   ✅ Removed file {pattern}")
                 except OSError as e:
-                    print(f"   ⚠️  Could not remove {pattern}: {e}")
+                    logging.warning(f"   ⚠️  Could not remove {pattern}: {e}")
 
 
 def load_configuration():
@@ -57,7 +60,7 @@ def load_configuration():
         conf_loader = OmegaConfigLoader(conf_source=conf_path)
         return conf_loader["parameters"]
     except Exception as e:
-        print(f"⚠️ Could not load configuration: {e}")
+        logging.warning(f"⚠️ Could not load configuration: {e}")
         # Return default config
         return {
             "app": {"port": 8508, "host": "localhost"},
@@ -71,10 +74,10 @@ def check_database(params):
 
     if os.path.exists(db_path):
         size_mb = os.path.getsize(db_path) / (1024 * 1024)
-        print(f"✅ Database found: {size_mb:.1f} MB")
+        logging.info(f"✅ Database found: {size_mb:.1f} MB")
         return True
     else:
-        print(f"❌ Database not found at: {db_path}")
+        logging.warning(f"❌ Database not found at: {db_path}")
         return False
 
 
@@ -82,7 +85,7 @@ def check_first_run():
     """Check if this is the first run"""
     first_run_file = "data/.first_run_complete"
     if not os.path.exists(first_run_file):
-        print("🚀 First run detected - will perform initial setup")
+        logging.info("🚀 First run detected - will perform initial setup")
         return True
     return False
 
@@ -92,7 +95,7 @@ def setup_data_update(params):
     from pipelines.web_app.nodes import should_update_data
 
     if should_update_data():
-        print("📊 Data update required...")
+        logging.info("📊 Data update required...")
         try:
             # Import and run data update
             from data_updater import KMBDataUpdater
@@ -101,36 +104,36 @@ def setup_data_update(params):
             updater = KMBDataUpdater()
             db_manager = KMBDatabaseManager()
 
-            print("   • Updating routes...")
+            logging.info("   • Updating routes...")
             routes = updater.fetch_routes()
             if routes:
                 db_manager.insert_routes(routes)
 
-            print("   • Updating stops...")
+            logging.info("   • Updating stops...")
             stops = updater.fetch_stops()
             if stops:
                 db_manager.insert_stops(stops)
 
-            print("✅ Data update completed")
+            logging.info("✅ Data update completed")
             return True
         except Exception as e:
-            print(f"⚠️ Data update failed: {e}")
+            logging.warning(f"⚠️ Data update failed: {e}")
             return False
     else:
-        print("📊 Data is up to date")
+        logging.info("📊 Data is up to date")
         return True
 
 
 def main():
     """Main launcher function"""
-    print("🚌 Traffic ETA - Production Launcher")
-    print("=" * 70)
-    print("🌟 Enhanced Hong Kong Public Transport Explorer")
-    print("🎯 Complete route coverage with dual directions")
-    print("🗺️ OSM routing with auto-zoom and center controls")
-    print("🏷️ Route type classification (Express, Night, Circular)")
-    print("🔍 Enhanced search with depot names")
-    print("-" * 70)
+    logging.info("🚌 Traffic ETA - Production Launcher")
+    logging.info("=" * 70)
+    logging.info("🌟 Enhanced Hong Kong Public Transport Explorer")
+    logging.info("🎯 Complete route coverage with dual directions")
+    logging.info("🗺️ OSM routing with auto-zoom and center controls")
+    logging.info("🏷️ Route type classification (Express, Night, Circular)")
+    logging.info("🔍 Enhanced search with depot names")
+    logging.info("-" * 70)
 
     # Load configuration
     params = load_configuration()
@@ -142,29 +145,29 @@ def main():
     is_first_run = check_first_run()
 
     # Check database
-    print("\n📊 Checking database...")
+    logging.info("\n📊 Checking database...")
     if not check_database(params):
-        print("Please ensure the database is properly set up.")
-        print("Run: python src/traffic_eta/data_updater.py --all")
+        logging.warning("Please ensure the database is properly set up.")
+        logging.warning("Run: python src/traffic_eta/data_updater.py --all")
         return
 
     # Setup data update if configured
     if params.get("schedule", {}).get("daily_update", {}).get("enabled", True):
-        print("\n🔄 Checking data updates...")
+        logging.info("\n🔄 Checking data updates...")
         setup_data_update(params)
 
-    print("\n🚀 Launching Traffic ETA application...")
-    print("📱 Opening in your default web browser")
-    print(f"🔗 URL: http://{params['app']['host']}:{params['app']['port']}")
-    print("⏹️  Press Ctrl+C to stop the application")
-    print("🔧 Enhanced features:")
-    print("   • Dual direction search with depot names")
-    print("   • Route type classification and badges")
-    print("   • Auto-zoom maps with center button")
-    print("   • Enhanced search and filtering")
-    print("   • First-run setup and daily updates")
-    print("   • Complete route coverage (788 routes)")
-    print("-" * 70)
+    logging.info("\n🚀 Launching Traffic ETA application...")
+    logging.info("📱 Opening in your default web browser")
+    logging.info(f"🔗 URL: http://{params['app']['host']}:{params['app']['port']}")
+    logging.info("⏹️  Press Ctrl+C to stop the application")
+    logging.info("🔧 Enhanced features:")
+    logging.info("   • Dual direction search with depot names")
+    logging.info("   • Route type classification and badges")
+    logging.info("   • Auto-zoom maps with center button")
+    logging.info("   • Enhanced search and filtering")
+    logging.info("   • First-run setup and daily updates")
+    logging.info("   • Complete route coverage (788 routes)")
+    logging.info("-" * 70)
 
     try:
         # Launch the Traffic ETA Streamlit app
@@ -192,13 +195,13 @@ def main():
             ]
         )
     except KeyboardInterrupt:
-        print("\n👋 Traffic ETA stopped by user")
-        print("🧹 Cleaning up...")
+        logging.info("\n👋 Traffic ETA stopped by user")
+        logging.info("🧹 Cleaning up...")
         clear_cache()
     except Exception as e:
-        print(f"❌ Error launching application: {e}")
-        print("Try running manually:")
-        print(f"  streamlit run {app_path} --server.port {port}")
+        logging.error(f"❌ Error launching application: {e}")
+        logging.error("Try running manually:")
+        logging.error(f"  streamlit run {app_path} --server.port {port}")
 
 
 if __name__ == "__main__":

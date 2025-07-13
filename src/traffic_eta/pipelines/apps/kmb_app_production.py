@@ -9,6 +9,7 @@ import sys
 import pandas as pd
 import streamlit as st
 from streamlit_folium import folium_static
+import folium
 
 # Add the pipelines to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines", "web_app"))
@@ -18,7 +19,6 @@ from pipelines.web_app.nodes import (
     get_route_stops_with_directions,
     get_sorted_routes,
     load_traffic_data,
-    natural_sort_key,
 )
 
 # Page configuration
@@ -403,8 +403,6 @@ def main():
             st.metric("Port", "8508", "Easy debugging")
 
         # Default Hong Kong map
-        import folium
-
         default_map = folium.Map(
             location=[22.3193, 114.1694], zoom_start=11, tiles="OpenStreetMap"
         )
