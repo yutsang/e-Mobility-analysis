@@ -3,7 +3,7 @@ Data Management Pipeline
 Pipeline for handling data fetching, updating, and database operations.
 """
 
-from kedro.pipeline import node, Pipeline, pipeline  # noqa
+from kedro.pipeline import Pipeline, node, pipeline  # noqa
 
 
 def create_pipeline(**kwargs) -> Pipeline:

@@ -3,11 +3,12 @@ This is a boilerplate pipeline 'data_ingestion'
 generated using Kedro 0.19.14
 """
 
+import logging
+import time
+from typing import Dict, List
+
 import pandas as pd
 import requests
-import logging
-from typing import Dict, List
-import time
 
 logger = logging.getLogger(__name__)
 

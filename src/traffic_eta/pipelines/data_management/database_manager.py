@@ -5,12 +5,13 @@ This module handles local storage of KMB routes and stops data using SQLite.
 Only ETA data is fetched from the API in real-time.
 """
 
-import sqlite3
-import pandas as pd
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Tuple
 import os
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+
+import pandas as pd
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

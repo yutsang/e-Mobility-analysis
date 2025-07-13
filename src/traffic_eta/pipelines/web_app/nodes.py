@@ -3,17 +3,18 @@ This is a boilerplate pipeline 'web_app'
 generated using Kedro 0.19.14
 """
 
-import streamlit as st
+import logging
+import os
+import re
+import sqlite3
+from typing import Dict, List, Optional, Tuple
+
 import folium
 import pandas as pd
-from streamlit_folium import folium_static
 import requests
-import re
-import os
-import sqlite3
-import logging
-from typing import Dict, List, Tuple, Optional
+import streamlit as st
 from kedro.config import OmegaConfigLoader
+from streamlit_folium import folium_static
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -4,13 +4,14 @@ Integrates with KMB/LWB bus API for real-time data
 Uses local database for routes and stops, only fetches ETA data from API
 """
 
-import requests
-import pandas as pd
 import json
+import logging
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
-import logging
+from typing import Any, Dict, List, Optional, Union
+
+import pandas as pd
+import requests
 from database_manager import KMBDatabaseManager
 
 # Configure logging

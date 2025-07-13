@@ -5,12 +5,13 @@ This script fetches KMB routes and stops data from the official API
 and stores it in the local database for offline use.
 """
 
-import requests
 import logging
-import time
 import sys
+import time
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
+import requests
 from database_manager import KMBDatabaseManager
 
 # Setup logging

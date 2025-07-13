@@ -3,7 +3,8 @@ This is a boilerplate pipeline 'web_app'
 generated using Kedro 0.19.14
 """
 
-from kedro.pipeline import node, Pipeline, pipeline  # noqa
+from kedro.pipeline import Pipeline, node, pipeline  # noqa
+
 from .nodes import load_traffic_data
 
 

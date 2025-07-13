@@ -3,11 +3,12 @@ Traffic ETA - Production Application
 Enhanced Hong Kong public transport route explorer with comprehensive features
 """
 
-import streamlit as st
-import pandas as pd
-from streamlit_folium import folium_static
-import sys
 import os
+import sys
+
+import pandas as pd
+import streamlit as st
+from streamlit_folium import folium_static
 
 # Add the current directory and parent directories to the path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,17 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(current_dir)))
 
 # Direct import from the correct relative path
 try:
-    from pipelines.web_app.nodes import (
-        load_traffic_data,
-        get_route_stops_with_directions,
-        search_routes_with_directions,
-        get_sorted_routes,
-        create_enhanced_route_map,
-        format_route_type_badge,
-        should_update_data,
-        mark_first_run_complete,
-        get_first_run_status,
-    )
+    from pipelines.web_app.nodes import (create_enhanced_route_map,
+                                         format_route_type_badge,
+                                         get_first_run_status,
+                                         get_route_stops_with_directions,
+                                         get_sorted_routes, load_traffic_data,
+                                         mark_first_run_complete,
+                                         search_routes_with_directions,
+                                         should_update_data)
 except ImportError as e:
     print(f"Import error: {e}")
     print(f"Current working directory: {os.getcwd()}")

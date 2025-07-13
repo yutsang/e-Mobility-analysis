@@ -3,9 +3,10 @@ This is a boilerplate pipeline 'data_processing'
 generated using Kedro 0.19.14
 """
 
-import pandas as pd
 import logging
 from typing import Dict, List
+
+import pandas as pd
 from database_manager import KMBDatabaseManager
 
 logger = logging.getLogger(__name__)

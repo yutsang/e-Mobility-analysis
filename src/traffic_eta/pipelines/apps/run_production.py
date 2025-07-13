@@ -4,11 +4,11 @@ Hong Kong KMB Transport - Production Launcher
 Launches the production-ready Kedro-based application
 """
 
-import sys
-import subprocess
-import os
 import glob
+import os
 import shutil
+import subprocess
+import sys
 
 
 def clear_cache():

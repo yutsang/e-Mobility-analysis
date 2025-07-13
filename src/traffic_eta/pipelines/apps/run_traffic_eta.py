@@ -4,11 +4,12 @@ Traffic ETA - Production Launcher
 Launches the production-ready Traffic ETA application with all enhancements
 """
 
-import sys
-import subprocess
-import os
 import glob
+import os
 import shutil
+import subprocess
+import sys
+
 from kedro.config import OmegaConfigLoader
 
 
