@@ -18,14 +18,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(current_dir)))
 
 # Direct import from the correct relative path
 try:
-    from pipelines.web_app.nodes import (create_enhanced_route_map,
-                                         format_route_type_badge,
-                                         get_first_run_status,
-                                         get_route_stops_with_directions,
-                                         get_sorted_routes, load_traffic_data,
-                                         mark_first_run_complete,
-                                         search_routes_with_directions,
-                                         should_update_data)
+    from pipelines.web_app.nodes import (
+        create_enhanced_route_map,
+        format_route_type_badge,
+        get_first_run_status,
+        get_route_stops_with_directions,
+        get_sorted_routes,
+        load_traffic_data,
+        mark_first_run_complete,
+        search_routes_with_directions,
+        should_update_data,
+    )
 except ImportError as e:
     print(f"Import error: {e}")
     print(f"Current working directory: {os.getcwd()}")

@@ -13,10 +13,13 @@ from streamlit_folium import folium_static
 # Add the pipelines to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines", "web_app"))
 
-from pipelines.web_app.nodes import (create_enhanced_route_map,
-                                     get_route_stops_with_directions,
-                                     get_sorted_routes, load_traffic_data,
-                                     natural_sort_key)
+from pipelines.web_app.nodes import (
+    create_enhanced_route_map,
+    get_route_stops_with_directions,
+    get_sorted_routes,
+    load_traffic_data,
+    natural_sort_key,
+)
 
 # Page configuration
 st.set_page_config(
