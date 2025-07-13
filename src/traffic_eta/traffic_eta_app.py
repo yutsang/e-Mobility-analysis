@@ -6,12 +6,12 @@ Enhanced Hong Kong public transport route explorer with comprehensive features
 import logging
 import os
 import sys
-
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-
+import traceback
 
 import streamlit as st
 from streamlit_folium import folium_static
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 # Add the current directory and parent directories to the path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -115,43 +115,43 @@ st.markdown(
         padding-bottom: 1rem !important;
         max-width: 100% !important;
     }
-    
+
     /* Full height layout */
     html, body, .stApp {
         height: 100vh !important;
         overflow-x: hidden !important;
     }
-    
+
     .main {
         height: calc(100vh - 3rem) !important;
         overflow-y: auto !important;
     }
-    
+
     /* Remove default spacing that creates placeholders */
     .stMarkdown, .stColumns, .stColumn {
         margin-bottom: 0 !important;
     }
-    
+
     /* Override Streamlit's default container styling for route stops */
     .stColumn:nth-child(2) .stMarkdown {
         margin-bottom: 8px !important;
         padding: 0 !important;
     }
-    
+
     .stColumn:nth-child(2) div[data-testid="stMarkdownContainer"] {
         margin-bottom: 8px !important;
         padding: 0 !important;
     }
-    
+
     /* Ensure columns fill available height */
     .stColumns {
         height: 100% !important;
     }
-    
+
     .stColumn {
         height: 100% !important;
     }
-    
+
     /* Statistics styling - simplified */
     .stats-container {
         background: var(--bg-secondary);
@@ -160,14 +160,14 @@ st.markdown(
         margin-bottom: 1rem;
         border: 1px solid var(--border-color);
     }
-    
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 1rem;
         margin-top: 1rem;
     }
-    
+
     .stat-item {
         background: var(--bg-accent);
         padding: 1rem;
@@ -176,24 +176,24 @@ st.markdown(
         border: 1px solid var(--border-light);
         transition: transform 0.2s ease;
     }
-    
+
     .stat-item:hover {
         transform: translateY(-2px);
     }
-    
+
     .stat-number {
         font-size: 1.5rem;
         font-weight: bold;
         color: var(--blue);
         display: block;
     }
-    
+
     .stat-label {
         font-size: 0.9rem;
         color: var(--text-muted);
         margin-top: 0.3rem;
     }
-    
+
     /* Route information styling - smaller font size */
     .route-info-container {
         background: var(--bg-secondary);
@@ -203,7 +203,7 @@ st.markdown(
         border: 1px solid var(--border-color);
         transition: all 0.3s ease;
     }
-    
+
     /* Compact button styling for reverse button */
     .stButton > button {
         padding: 0.3rem 0.8rem !important;
@@ -211,12 +211,12 @@ st.markdown(
         height: auto !important;
         min-height: 2rem !important;
     }
-    
+
     /* Aggressive fix for route information columns - force minimal height and no background */
     .route-info-section .stColumns {
         gap: 0.5rem !important;
     }
-    
+
     .route-info-section .stColumn {
         padding: 0 !important;
         margin: 0 !important;
@@ -226,7 +226,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn > div {
         padding: 0 !important;
         margin: 0 !important;
@@ -234,7 +234,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn .element-container {
         margin: 0 !important;
         padding: 0 !important;
@@ -242,7 +242,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn .stMarkdown {
         margin: 0 !important;
         padding: 0 !important;
@@ -250,7 +250,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn div[data-testid="stMarkdownContainer"] {
         background: transparent !important;
         padding: 0 !important;
@@ -258,7 +258,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn .stButton {
         margin: 0 !important;
         padding: 0 !important;
@@ -266,7 +266,7 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-section .stColumn .stButton > div {
         margin: 0 !important;
         padding: 0 !important;
@@ -274,19 +274,19 @@ st.markdown(
         min-height: auto !important;
         height: auto !important;
     }
-    
+
     .route-info-container:hover {
         border-color: var(--blue);
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    
+
     .route-info-row {
         display: flex;
         align-items: center;
         gap: 0.8rem;
         flex-wrap: wrap;
     }
-    
+
     .route-info-left {
         display: flex;
         align-items: center;
@@ -294,21 +294,21 @@ st.markdown(
         flex: 1;
         flex-wrap: wrap;
     }
-    
+
     .route-info-item {
         display: flex;
         align-items: center;
         gap: 0.4rem;
         margin-bottom: 0.4rem;
     }
-    
+
     .route-icon {
         font-size: 0.9rem;
         color: var(--text-secondary);
         width: 20px;
         text-align: center;
     }
-    
+
     .route-detail {
         background: var(--bg-accent);
         padding: 0.4rem 0.8rem;
@@ -320,33 +320,33 @@ st.markdown(
         min-width: 100px;
         text-align: center;
     }
-    
+
     .route-detail.route-number {
         border-color: var(--blue);
         color: var(--blue);
         font-weight: bold;
     }
-    
+
     .route-detail.route-type {
         border-color: var(--green);
         color: var(--green);
     }
-    
+
     .route-detail.route-origin {
         border-color: var(--orange);
         color: var(--orange);
     }
-    
+
     .route-detail.route-destination {
         border-color: var(--red);
         color: var(--red);
     }
-    
+
     .route-detail.route-direction {
         border-color: var(--text-secondary);
         color: var(--text-secondary);
     }
-    
+
     .route-reverse-btn {
         background: var(--blue);
         color: white;
@@ -358,25 +358,25 @@ st.markdown(
         white-space: nowrap;
         font-size: 0.9rem;
     }
-    
+
     .route-reverse-btn:hover {
         background: var(--text-secondary);
         transform: translateY(-1px);
     }
-    
+
     .route-reverse-btn:disabled {
         background: var(--text-muted);
         cursor: not-allowed;
         transform: none;
     }
-    
+
     /* Main content styling */
     .main-content {
         max-width: 100%;
         padding: 0;
         height: 100%;
     }
-    
+
     .map-stops-container {
         display: flex;
         gap: 1rem;
@@ -385,13 +385,13 @@ st.markdown(
         margin: 1rem 0;
         align-items: flex-start;
     }
-    
+
     .map-column {
         flex: 2;
         min-width: 0;
         height: 100%;
     }
-    
+
     .stops-column {
         flex: 1;
         min-width: 300px;
@@ -399,7 +399,7 @@ st.markdown(
         max-height: 600px;
         overflow: hidden;
     }
-    
+
     /* Route stops container styling - match map height */
     .stops-container {
         height: 100%;
@@ -410,56 +410,56 @@ st.markdown(
         flex-direction: column;
         overflow: hidden;
     }
-    
+
     /* Scrollbar styling for route stops column */
     .stColumn:nth-child(2)::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     .stColumn:nth-child(2)::-webkit-scrollbar-track {
         background: #f8f9fa;
         border-radius: 4px;
     }
-    
+
     .stColumn:nth-child(2)::-webkit-scrollbar-thumb {
         background: #007bff;
         border-radius: 4px;
     }
-    
+
     .stColumn:nth-child(2)::-webkit-scrollbar-thumb:hover {
         background: #0056b3;
     }
-    
+
     .stops-header {
         padding: 1rem;
         border-bottom: 1px solid var(--border-color);
         background: var(--bg-primary);
     }
-    
+
     .stops-list {
         flex: 1;
         overflow-y: auto;
         padding: 1rem;
     }
-    
+
     .stops-list::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     .stops-list::-webkit-scrollbar-track {
         background: var(--bg-secondary);
         border-radius: 4px;
     }
-    
+
     .stops-list::-webkit-scrollbar-thumb {
         background: var(--blue);
         border-radius: 4px;
     }
-    
+
     .stops-list::-webkit-scrollbar-thumb:hover {
         background: var(--text-secondary);
     }
-    
+
     .stop-item {
         display: flex;
         align-items: center;
@@ -472,13 +472,13 @@ st.markdown(
         transition: all 0.2s ease;
         cursor: pointer;
     }
-    
+
     .stop-item:hover {
         background: var(--bg-accent);
         border-color: var(--blue);
         transform: translateX(4px);
     }
-    
+
     .stop-number {
         background: var(--blue);
         color: white;
@@ -493,25 +493,25 @@ st.markdown(
         justify-content: center;
         flex-shrink: 0;
     }
-    
+
     .stop-name {
         font-size: 0.9rem;
         flex: 1;
         color: var(--text-primary);
         line-height: 1.4;
     }
-    
+
     .stop-name strong {
         color: var(--blue);
         display: block;
         margin-bottom: 0.2rem;
     }
-    
+
     .stop-name small {
         color: var(--text-secondary);
         font-size: 0.8rem;
     }
-    
+
     .welcome-container {
         text-align: center;
         padding: 3rem 2rem;
@@ -523,14 +523,14 @@ st.markdown(
         margin-left: auto;
         margin-right: auto;
     }
-    
+
     .welcome-icon {
         font-size: 4rem;
         margin-bottom: 1rem;
         color: var(--blue);
         animation: bounce 2s infinite;
     }
-    
+
     @keyframes bounce {
         0%, 20%, 50%, 80%, 100% {
             transform: translateY(0);
@@ -542,20 +542,20 @@ st.markdown(
             transform: translateY(-5px);
         }
     }
-    
+
     .welcome-container h2 {
         color: var(--text-primary);
         margin-bottom: 1rem;
         font-size: 2rem;
     }
-    
+
     .welcome-container p {
         color: var(--text-secondary);
         line-height: 1.8;
         margin-bottom: 1rem;
         font-size: 1.1rem;
     }
-    
+
     /* Button styling improvements */
     .stButton > button {
         border-radius: 8px !important;
@@ -563,23 +563,23 @@ st.markdown(
         transition: all 0.2s ease !important;
         font-weight: 500 !important;
     }
-    
+
     .stButton > button:hover {
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
-    
+
     .stButton > button[kind="primary"] {
         background: var(--blue) !important;
         color: white !important;
         border-color: var(--blue) !important;
     }
-    
+
     .stButton > button[kind="primary"]:hover {
         background: var(--blue) !important;
         filter: brightness(1.1) !important;
     }
-    
+
     /* Map container styling - increased height */
     .map-container {
         height: 100%;
@@ -588,101 +588,101 @@ st.markdown(
         overflow: hidden;
         background: var(--bg-secondary);
     }
-    
+
     .map-container iframe {
         width: 100% !important;
         height: 100% !important;
         border: none !important;
         display: block !important;
     }
-    
+
     /* Fix for folium map display */
     .stApp .element-container iframe {
         width: 100% !important;
         height: 100% !important;
         min-height: 500px !important;
     }
-    
+
     /* Responsive design improvements */
     @media (max-width: 1200px) {
         .route-info-row {
             flex-wrap: wrap;
         }
-        
+
         .route-info-left {
             flex-wrap: wrap;
         }
-        
+
         .map-stops-container {
             height: calc(100vh - 200px);
             min-height: 500px;
         }
     }
-    
+
     @media (max-width: 768px) {
         .stats-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .route-info-row {
             flex-direction: column;
             gap: 0.5rem;
         }
-        
+
         .route-info-left {
             flex-direction: column;
             align-items: flex-start;
         }
-        
+
         .map-stops-container {
             flex-direction: column;
             height: calc(100vh - 150px);
             min-height: 700px;
         }
-        
+
         .map-container {
             height: 60%;
             min-height: 350px;
         }
-        
+
         .stops-container {
             height: 40%;
             min-height: 350px;
         }
-        
+
         .stops-column {
             min-width: unset;
         }
-        
+
         .welcome-container {
             padding: 2rem 1rem;
         }
-        
+
         .welcome-container h2 {
             font-size: 1.5rem;
         }
-        
+
         .welcome-container p {
             font-size: 1rem;
         }
     }
-    
+
     @media (max-width: 480px) {
         .route-detail {
             min-width: 80px;
             font-size: 0.7rem;
         }
-        
+
         .stop-item {
             padding: 0.5rem;
         }
-        
+
         .stop-number {
             min-width: 24px;
             height: 24px;
             font-size: 0.7rem;
         }
-        
+
         .stop-name {
             font-size: 0.8rem;
         }
@@ -756,347 +756,303 @@ def split_name_for_box(name, max_len=25):
     return name[:split_at] + "<br>" + name[split_at + 1 :]
 
 
-# Main application
-def main():
-    # Load data with progress indicator
-    try:
-        with st.spinner("Loading transport data..."):
-            routes_df, stops_df = initialize_app()
-        if routes_df is None or routes_df.empty:
-            st.error("❌ No route data available. Please check your data connection.")
-            return
-    except Exception as e:
-        st.error(f"❌ Error loading data: {str(e)}")
-        return
-
-    # Initialize session state
+def _initialize_session_state():
+    """Initialize session state variables"""
     if "selected_route" not in st.session_state:
         st.session_state.selected_route = None
     if "selected_direction" not in st.session_state:
         st.session_state.selected_direction = None
 
-    # MAIN CONTENT AREA
-    st.title("🗺️ Hong Kong Public Transport Explorer")
 
-    # Search functionality moved to main content
+def _setup_header():
+    """Setup application header"""
+    st.title("🗺️ Hong Kong Public Transport Explorer")
     st.header("🔍 Search Routes")
 
-    # Create route options with caching
-    route_options = get_cached_route_options(routes_df)
+
+def _handle_route_selection(route_options):
+    """Handle route selection from dropdown"""
     option_texts = ["Select a route and direction..."] + [
         opt["text"] for opt in route_options
     ]
 
-    # Editable dropdown for route selection
     selected_option = st.selectbox(
         "🚌 Choose Route & Direction",
         option_texts,
         help="Type to search or select from dropdown",
     )
 
-    if selected_option != "Select a route and direction...":
-        # Find the selected route data
-        selected_route_data = None
-        for opt in route_options:
-            if opt["text"] == selected_option:
-                selected_route_data = opt
-                break
+    if selected_option == "Select a route and direction...":
+        return None
 
-        if selected_route_data:
-            route_id = selected_route_data["route_id"]
-            st.session_state.selected_route = route_id
+    # Find the selected route data
+    for opt in route_options:
+        if opt["text"] == selected_option:
+            return opt
 
-            # Load route stops with caching
-            with st.spinner("Loading route details..."):
-                route_stops = get_cached_route_stops(route_id)
+    return None
 
-            if not route_stops.empty:
-                # Get available directions
-                directions = route_stops["direction"].unique()
 
-                # Reset direction if switching routes or if current direction doesn't exist
-                if (
-                    st.session_state.get("selected_route") != route_id
-                    or st.session_state.get("selected_direction") not in directions
-                ):
-                    st.session_state.selected_direction = directions[0]
+def _handle_direction_logic(route_stops, selected_route_data):
+    """Handle direction selection and validation logic"""
+    directions = route_stops["direction"].unique()
+    route_id = selected_route_data["route_id"]
 
-                # Get current direction (ensure it's valid and is an integer)
-                current_direction = st.session_state.get(
-                    "selected_direction", directions[0]
-                )
+    # Reset direction if switching routes or if current direction doesn't exist
+    if (
+        st.session_state.get("selected_route") != route_id
+        or st.session_state.get("selected_direction") not in directions
+    ):
+        st.session_state.selected_direction = directions[0]
 
-                # Ensure current direction exists in available directions and is an integer
-                if current_direction not in directions:
-                    current_direction = directions[0]
-                    st.session_state.selected_direction = current_direction
+    # Get current direction (ensure it's valid and is an integer)
+    current_direction = st.session_state.get("selected_direction", directions[0])
 
-                # Ensure it's an integer
-                try:
-                    current_direction = int(current_direction)
-                except (ValueError, TypeError):
-                    current_direction = int(directions[0]) if len(directions) > 0 else 1
-                    st.session_state.selected_direction = current_direction
+    # Ensure current direction exists in available directions and is an integer
+    if current_direction not in directions:
+        current_direction = directions[0]
+        st.session_state.selected_direction = current_direction
 
-                # Debug information (only show in development)
-                DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
-                if DEBUG_MODE:
-                    with st.expander("Debug Information", expanded=False):
-                        st.write(
-                            f"DEBUG: Current direction: {current_direction} (type: {type(current_direction)})"
-                        )
-                        st.write(f"DEBUG: Available directions: {list(directions)}")
-                        st.write(f"DEBUG: Direction stops count: {len(route_stops)}")
-                        st.write(f"DEBUG: Total directions: {len(directions)}")
+    # Ensure it's an integer
+    try:
+        current_direction = int(current_direction)
+    except (ValueError, TypeError):
+        current_direction = int(directions[0]) if len(directions) > 0 else 1
+        st.session_state.selected_direction = current_direction
 
-                # Get direction-specific route information
-                direction_stops = route_stops[
-                    route_stops["direction"] == current_direction
-                ].sort_values("sequence")
+    return current_direction, directions
 
-                # Get origin and destination for current direction
-                if not direction_stops.empty:
-                    first_stop = direction_stops.iloc[0]["stop_name"]
-                    last_stop = direction_stops.iloc[-1]["stop_name"]
-                else:
-                    first_stop = selected_route_data["origin"]
-                    last_stop = selected_route_data["destination"]
 
-                # Display route information with integrated switch button
-                st.subheader("Route Information")
+def _show_debug_info(current_direction, directions, route_stops):
+    """Show debug information in development mode"""
+    DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+    if DEBUG_MODE:
+        with st.expander("Debug Information", expanded=False):
+            st.write(
+                f"DEBUG: Current direction: {current_direction} (type: {type(current_direction)})"
+            )
+            st.write(f"DEBUG: Available directions: {list(directions)}")
+            st.write(f"DEBUG: Direction stops count: {len(route_stops)}")
+            st.write(f"DEBUG: Total directions: {len(directions)}")
 
-                # Create route information using HTML only (no Streamlit columns)
-                route_info_html = f"""
-                <div style="display: flex; gap: 0.5rem; align-items: stretch; margin-bottom: 1rem;">
-                    <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🚌 Route</div>
-                        <div style="font-size: 0.9rem; font-weight: bold; color: var(--blue);">{selected_route_data['route_id']}</div>
-                    </div>
-                    <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🏷️ Type</div>
-                        <div style="font-size: 0.8rem; font-weight: bold; color: var(--green);">{selected_route_data['route_type']}</div>
-                    </div>
-                    <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">📍 From</div>
-                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--orange);">{split_name_for_box(first_stop)}</div>
-                    </div>
-                    <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🎯 To</div>
-                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--red);">{split_name_for_box(last_stop)}</div>
-                    </div>
-                    <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🧭 Direction</div>
-                        <div style="font-size: 0.9rem; font-weight: bold; color: var(--text-secondary);">{str(current_direction)}</div>
-                    </div>
-                </div>
-                """
-                st.markdown(route_info_html, unsafe_allow_html=True)
 
-                # Add ultra-aggressive CSS to eliminate button container backgrounds
-                st.markdown(
-                    """
-                <style>
-                /* Ultra-aggressive targeting for button containers */
-                .button-row .stColumns {
-                    gap: 0.5rem !important;
-                    background: transparent !important;
-                }
-                .button-row .stColumn {
-                    padding: 0 !important;
-                    margin: 0 !important;
-                    background: transparent !important;
-                    border: none !important;
-                    min-height: auto !important;
-                    height: auto !important;
-                    box-shadow: none !important;
-                }
-                .button-row .stColumn > div {
-                    padding: 0 !important;
-                    margin: 0 !important;
-                    background: transparent !important;
-                    min-height: auto !important;
-                    height: auto !important;
-                    box-shadow: none !important;
-                }
-                .button-row .stColumn .element-container {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background: transparent !important;
-                    min-height: auto !important;
-                    height: auto !important;
-                    box-shadow: none !important;
-                }
-                .button-row .stColumn .stButton {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background: transparent !important;
-                    min-height: auto !important;
-                    height: auto !important;
-                    box-shadow: none !important;
-                }
-                .button-row .stColumn .stButton > div {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background: transparent !important;
-                    min-height: auto !important;
-                    height: auto !important;
-                    box-shadow: none !important;
-                }
-                .button-row .stButton > button {
-                    margin: 0 !important;
-                    height: 2.5rem !important;
-                    min-height: 2.5rem !important;
-                    padding: 0.5rem !important;
-                    font-size: 0.9rem !important;
-                }
-                /* Target any remaining containers */
-                .button-row div[data-testid] {
-                    background: transparent !important;
-                    padding: 0 !important;
-                    margin: 0 !important;
-                    box-shadow: none !important;
-                }
-                /* Force override for all child elements */
-                .button-row * {
-                    background-color: transparent !important;
-                }
-                .button-row button {
-                    background-color: #dc3545 !important; /* Keep button color */
-                }
-                .button-row button:disabled {
-                    background-color: #6c757d !important; /* Keep disabled button color */
-                }
-                .button-row button:not(:disabled):not(.btn-outline) {
-                    background-color: #dc3545 !important; /* Ensure primary button color */
-                }
-                </style>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-                # Create buttons with specific CSS class
-                st.markdown('<div class="button-row">', unsafe_allow_html=True)
-                col_search, col_reverse = st.columns([4, 1])
-
-                with col_search:
-                    if st.button(
-                        "🔍 Search Other Routes",
-                        key="search_other_routes",
-                        help="Click to search for other routes",
-                        use_container_width=True,
-                    ):
-                        # Clear current selection to go back to search
-                        st.session_state.selected_route = None
-                        st.session_state.selected_direction = None
-                        st.rerun()
-
-                with col_reverse:
-                    # Reverse direction button - use session state approach
-                    if len(directions) > 1:
-                        # Multiple directions - clickable reverse button
-                        if st.button(
-                            "🔄 REVERSE",
-                            key="reverse_direction_button",
-                            help="Reverse route direction",
-                            use_container_width=True,
-                            type="primary",
-                        ):
-                            other_directions = [
-                                d for d in directions if d != current_direction
-                            ]
-                            if other_directions:
-                                st.session_state.selected_direction = other_directions[
-                                    0
-                                ]
-                                st.rerun()
-                    else:
-                        # Single direction - show as disabled button
-                        st.button(
-                            f"🧭 Dir {current_direction}",
-                            key="direction_display_button",
-                            help="Only one direction available",
-                            use_container_width=True,
-                            disabled=True,
-                        )
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                st.divider()
-
-                # Create map and route stops layout
-                if not direction_stops.empty:
-                    col1, col2 = st.columns([3, 1], gap="medium")
-
-                    with col1:
-                        st.subheader("🗺️ Route Map")
-
-                        # Create and display map with error handling
-                        try:
-                            with st.spinner("Loading route map..."):
-                                map_obj = create_enhanced_route_map(
-                                    direction_stops,
-                                    st.session_state.get("selected_stop_id"),
-                                    current_direction,
-                                )
-                                folium_static(map_obj, width=1200, height=600)
-                        except Exception as e:
-                            st.error(f"❌ Error creating map: {str(e)}")
-                            st.info(
-                                "💡 Try refreshing the page or selecting a different route."
-                            )
-                            # Only show debug info if in debug mode
-                            if os.getenv("DEBUG_MODE", "false").lower() == "true":
-                                st.write(
-                                    f"Debug info: direction_stops shape: {direction_stops.shape}"
-                                )
-                                st.write(
-                                    f"Debug info: current_direction: {current_direction}"
-                                )
-                                import traceback
-
-                                st.text(traceback.format_exc())
-
-                    with col2:
-                        st.subheader("🚏 Route Stops")
-                        if not direction_stops.empty:
-                            stops_html = "<div style='height:600px; overflow-y:auto; border:1px solid #e0e0e0; border-radius:8px; background:var(--bg-secondary); padding:8px;'>"
-                            for idx, stop in enumerate(direction_stops.itertuples(), 1):
-                                stops_html += (
-                                    f"<div style='display:flex; align-items:center; gap:0.75rem; "
-                                    f"padding:0.5rem 0.75rem; border-bottom:1px solid #444; "
-                                    f"background:var(--bg-primary); font-size:1rem; color:var(--text-primary);'>"
-                                    f"<span style='background:#2196f3; color:white; border-radius:50%; "
-                                    f"width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:bold;'>"
-                                    f"{idx}</span>"
-                                    f"<span style='flex:1;'>{stop.stop_name}</span>"
-                                    f"<span style='color:#888; font-size:0.85em;'>ID: {stop.stop_id}</span>"
-                                    f"</div>"
-                                )
-                            stops_html += "</div>"
-                            st.markdown(stops_html, unsafe_allow_html=True)
-                        else:
-                            st.info("⚠️ No stops found for this route.")
-            else:
-                st.warning("⚠️ No stop data available for this route")
+def _get_route_endpoints(direction_stops, selected_route_data):
+    """Get origin and destination for current direction"""
+    if not direction_stops.empty:
+        first_stop = direction_stops.iloc[0]["stop_name"]
+        last_stop = direction_stops.iloc[-1]["stop_name"]
     else:
-        # Show welcome message
-        st.markdown(
-            """
-        <div class="welcome-container">
-            <div class="welcome-icon">🚌</div>
-            <h2>Welcome to Hong Kong Transport Explorer!</h2>
-            <p>Select a route from the dropdown above to view its interactive map, route information, and stop details.</p>
-            <p><strong>💡 Pro tip:</strong> You can type in the dropdown to quickly find routes!</p>
-        </div>
-        """,
-            unsafe_allow_html=True,
-        )
+        first_stop = selected_route_data["origin"]
+        last_stop = selected_route_data["destination"]
 
-    # Key Statistics section moved to bottom
+    return first_stop, last_stop
+
+
+def _display_route_info(selected_route_data, first_stop, last_stop, current_direction):
+    """Display route information"""
+    st.subheader("Route Information")
+
+    route_info_html = f"""
+    <div style="display: flex; gap: 0.5rem; align-items: stretch; margin-bottom: 1rem;">
+        <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🚌 Route</div>
+            <div style="font-size: 0.9rem; font-weight: bold; color: var(--blue);">{selected_route_data['route_id']}</div>
+        </div>
+        <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🏷️ Type</div>
+            <div style="font-size: 0.8rem; font-weight: bold; color: var(--green);">{selected_route_data['route_type']}</div>
+        </div>
+        <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">📍 From</div>
+            <div style="font-size: 0.75rem; font-weight: bold; color: var(--orange);">{split_name_for_box(first_stop)}</div>
+        </div>
+        <div style="flex: 2; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🎯 To</div>
+            <div style="font-size: 0.75rem; font-weight: bold; color: var(--red);">{split_name_for_box(last_stop)}</div>
+        </div>
+        <div style="flex: 1; text-align: center; padding: 0.3rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.1rem;">🧭 Direction</div>
+            <div style="font-size: 0.9rem; font-weight: bold; color: var(--text-secondary);">{str(current_direction)}</div>
+        </div>
+    </div>
+    """
+    st.markdown(route_info_html, unsafe_allow_html=True)
+
+
+def _render_css_and_buttons(directions, current_direction):
+    st.markdown(
+        """
+    <style>
+    /* Ultra-aggressive targeting for button containers */
+    .button-row .stColumns {
+        gap: 0.5rem !important;
+        background: transparent !important;
+    }
+    .button-row .stColumn {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-shadow: none !important;
+    }
+    .button-row .stColumn > div {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-shadow: none !important;
+    }
+    .button-row .stColumn .element-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-shadow: none !important;
+    }
+    .button-row .stColumn .stButton {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-shadow: none !important;
+    }
+    .button-row .stColumn .stButton > div {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-shadow: none !important;
+    }
+    .button-row .stButton > button {
+        margin: 0 !important;
+        height: 2.5rem !important;
+        min-height: 2.5rem !important;
+        padding: 0.5rem !important;
+        font-size: 0.9rem !important;
+    }
+    .button-row div[data-testid] {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    .button-row * {
+        background-color: transparent !important;
+    }
+    .button-row button {
+        background-color: #dc3545 !important;
+    }
+    .button-row button:disabled {
+        background-color: #6c757d !important;
+    }
+    .button-row button:not(:disabled):not(.btn-outline) {
+        background-color: #dc3545 !important;
+    }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="button-row">', unsafe_allow_html=True)
+    col_search, col_reverse = st.columns([4, 1])
+    with col_search:
+        if st.button(
+            "🔍 Search Other Routes",
+            key="search_other_routes",
+            help="Click to search for other routes",
+            use_container_width=True,
+        ):
+            st.session_state.selected_route = None
+            st.session_state.selected_direction = None
+            st.rerun()
+    with col_reverse:
+        if len(directions) > 1:
+            if st.button(
+                "🔄 REVERSE",
+                key="reverse_direction_button",
+                help="Reverse route direction",
+                use_container_width=True,
+                type="primary",
+            ):
+                other_directions = [d for d in directions if d != current_direction]
+                if other_directions:
+                    st.session_state.selected_direction = other_directions[0]
+                    st.rerun()
+        else:
+            st.button(
+                f"🧭 Dir {current_direction}",
+                key="direction_display_button",
+                help="Only one direction available",
+                use_container_width=True,
+                disabled=True,
+            )
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.divider()
+
+
+def _render_map_and_stops(direction_stops, current_direction):
+    col1, col2 = st.columns([3, 1], gap="medium")
+    with col1:
+        st.subheader("🗺️ Route Map")
+        try:
+            with st.spinner("Loading route map..."):
+                map_obj = create_enhanced_route_map(
+                    direction_stops,
+                    st.session_state.get("selected_stop_id"),
+                    current_direction,
+                )
+                folium_static(map_obj, width=1200, height=600)
+        except Exception as e:
+            st.error(f"❌ Error creating map: {str(e)}")
+            st.info("💡 Try refreshing the page or selecting a different route.")
+            if os.getenv("DEBUG_MODE", "false").lower() == "true":
+                st.write(f"Debug info: direction_stops shape: {direction_stops.shape}")
+                st.write(f"Debug info: current_direction: {current_direction}")
+                st.text(traceback.format_exc())
+    with col2:
+        st.subheader("🚏 Route Stops")
+        if not direction_stops.empty:
+            stops_html = "<div style='height:600px; overflow-y:auto; border:1px solid #e0e0e0; border-radius:8px; background:var(--bg-secondary); padding:8px;'>"
+            for idx, stop in enumerate(direction_stops.itertuples(), 1):
+                stops_html += (
+                    f"<div style='display:flex; align-items:center; gap:0.75rem; "
+                    f"padding:0.5rem 0.75rem; border-bottom:1px solid #444; "
+                    f"background:var(--bg-primary); font-size:1rem; color:var(--text-primary);'>"
+                    f"<span style='background:#2196f3; color:white; border-radius:50%; "
+                    f"width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:bold;'>"
+                    f"{idx}</span>"
+                    f"<span style='flex:1;'>{stop.stop_name}</span>"
+                    f"<span style='color:#888; font-size:0.85em;'>ID: {stop.stop_id}</span>"
+                    f"</div>"
+                )
+            stops_html += "</div>"
+            st.markdown(stops_html, unsafe_allow_html=True)
+        else:
+            st.info("⚠️ No stops found for this route.")
+
+
+def _render_welcome_message():
+    st.markdown(
+        """
+    <div class="welcome-container">
+        <div class="welcome-icon">🚌</div>
+        <h2>Welcome to Hong Kong Transport Explorer!</h2>
+        <p>Select a route from the dropdown above to view its interactive map, route information, and stop details.</p>
+        <p><strong>💡 Pro tip:</strong> You can type in the dropdown to quickly find routes!</p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_key_statistics(routes_df, stops_df):
     st.divider()
     st.header("📊 Key Statistics")
-
-    # Try to get all destinations safely
     try:
         all_destinations = set(routes_df["destination"].dropna().unique()) | set(
             routes_df["origin"].dropna().unique()
@@ -1105,13 +1061,9 @@ def main():
         all_destinations = set(routes_df["destination_en"].dropna().unique()) | set(
             routes_df["origin_en"].dropna().unique()
         )
-
-    # Calculate statistics
     total_routes = len(routes_df)
     total_stops = len(stops_df) if stops_df is not None and not stops_df.empty else 0
     total_destinations = len(all_destinations)
-
-    # Display statistics with simplified HTML
     st.markdown(
         f"""
     <div class="stats-container">
@@ -1133,6 +1085,45 @@ def main():
     """,
         unsafe_allow_html=True,
     )
+
+
+def main():
+    try:
+        with st.spinner("Loading transport data..."):
+            routes_df, stops_df = initialize_app()
+        if routes_df is None or routes_df.empty:
+            st.error("❌ No route data available. Please check your data connection.")
+            return
+    except Exception as e:
+        st.error(f"❌ Error loading data: {str(e)}")
+        return
+    _initialize_session_state()
+    _setup_header()
+    route_options = get_cached_route_options(routes_df)
+    selected_route_data = _handle_route_selection(route_options)
+    if selected_route_data:
+        route_id = selected_route_data["route_id"]
+        st.session_state.selected_route = route_id
+        with st.spinner("Loading route details..."):
+            route_stops = get_cached_route_stops(route_id)
+        if not route_stops.empty:
+            current_direction, directions = _handle_direction_logic(route_stops, selected_route_data)
+            _show_debug_info(current_direction, directions, route_stops)
+            direction_stops = route_stops[
+                route_stops["direction"] == current_direction
+            ].sort_values("sequence")
+            first_stop, last_stop = _get_route_endpoints(direction_stops, selected_route_data)
+            _display_route_info(selected_route_data, first_stop, last_stop, current_direction)
+            _render_css_and_buttons(directions, current_direction)
+            if not direction_stops.empty:
+                _render_map_and_stops(direction_stops, current_direction)
+            else:
+                st.info("⚠️ No stop data available for this route")
+        else:
+            st.warning("⚠️ No stop data available for this route")
+    else:
+        _render_welcome_message()
+    _render_key_statistics(routes_df, stops_df)
 
 
 if __name__ == "__main__":

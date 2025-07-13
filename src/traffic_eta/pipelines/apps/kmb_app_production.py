@@ -133,8 +133,8 @@ def get_available_directions(route_stops):
     return direction_info
 
 
-def main():
-    """Main application function"""
+def _setup_header():
+    """Setup application header"""
     st.markdown(
         '<h1 class="main-header">🚌 Hong Kong KMB Transport</h1>', unsafe_allow_html=True
     )
@@ -143,21 +143,23 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Load data
+
+def _load_and_validate_data():
+    """Load and validate route data"""
     with st.spinner("Loading KMB route data..."):
         routes_df, stops_df = load_cached_data()
 
     if routes_df.empty:
         st.error("❌ No route data available. Please check database connection.")
-        return
+        return None, None
 
-    # Sort routes naturally
-    sorted_routes = get_sorted_routes(routes_df)
+    return routes_df, stops_df
 
-    # Sidebar controls
+
+def _setup_sidebar_controls(sorted_routes):
+    """Setup sidebar controls for route selection"""
     st.sidebar.header("🚌 Route Selection")
 
-    # Search functionality
     search_term = st.sidebar.text_input(
         "🔍 Search Routes",
         placeholder="e.g., 219X, 24, Central",
@@ -177,95 +179,105 @@ def main():
     else:
         filtered_routes = sorted_routes
 
-    # Route selection
-    if not filtered_routes.empty:
-        route_options = [
-            format_route_option(row) for idx, row in filtered_routes.iterrows()
-        ]
+    return filtered_routes, search_term
 
-        selected_route_display = st.sidebar.selectbox(
-            "Select Route",
-            ["None"] + route_options,
-            help=f"Found {len(filtered_routes)} routes",
+
+def _handle_route_selection(filtered_routes):
+    """Handle route selection logic"""
+    if filtered_routes.empty:
+        st.sidebar.warning("No routes found matching your search")
+        return None, None, pd.DataFrame(), 1, None
+
+    route_options = [
+        format_route_option(row) for idx, row in filtered_routes.iterrows()
+    ]
+
+    selected_route_display = st.sidebar.selectbox(
+        "Select Route",
+        ["None"] + route_options,
+        help=f"Found {len(filtered_routes)} routes",
+    )
+
+    if selected_route_display == "None":
+        return None, None, pd.DataFrame(), 1, None
+
+    # Extract route ID
+    selected_route_id = selected_route_display.split(" | ")[0]
+    selected_route_info = filtered_routes[
+        filtered_routes["route_id"] == selected_route_id
+    ].iloc[0]
+
+    # Load route stops with directions
+    with st.spinner("Loading route stops..."):
+        route_stops = get_route_stops_with_directions(selected_route_id)
+
+    if route_stops.empty:
+        st.sidebar.warning("⚠️ No stops found for this route")
+        return selected_route_id, selected_route_info, route_stops, 1, None
+
+    return selected_route_id, selected_route_info, route_stops, None, None
+
+
+def _handle_direction_selection(route_stops):
+    """Handle direction selection logic"""
+    available_directions = get_available_directions(route_stops)
+
+    if len(available_directions) > 1:
+        direction_options = [
+            f"{d['name']} ({d['stops']} stops)"
+            for d in available_directions
+        ]
+        selected_direction_display = st.sidebar.selectbox(
+            "Select Direction",
+            direction_options,
+            help="Choose route direction",
+        )
+        selected_direction = available_directions[
+            direction_options.index(selected_direction_display)
+        ]["direction"]
+    else:
+        selected_direction = available_directions[0]["direction"]
+        st.sidebar.info(
+            f"Single direction: {available_directions[0]['name']}"
         )
 
-        if selected_route_display != "None":
-            # Extract route ID
-            selected_route_id = selected_route_display.split(" | ")[0]
-            selected_route_info = filtered_routes[
-                filtered_routes["route_id"] == selected_route_id
-            ].iloc[0]
+    return selected_direction
 
-            # Load route stops with directions
-            with st.spinner("Loading route stops..."):
-                route_stops = get_route_stops_with_directions(selected_route_id)
 
-            if not route_stops.empty:
-                # Direction selection
-                available_directions = get_available_directions(route_stops)
+def _handle_stop_selection(route_stops, selected_direction):
+    """Handle stop selection logic"""
+    direction_stops = route_stops[
+        route_stops["direction"] == selected_direction
+    ].sort_values("sequence")
 
-                if len(available_directions) > 1:
-                    direction_options = [
-                        f"{d['name']} ({d['stops']} stops)"
-                        for d in available_directions
-                    ]
-                    selected_direction_display = st.sidebar.selectbox(
-                        "Select Direction",
-                        direction_options,
-                        help="Choose route direction",
-                    )
-                    selected_direction = available_directions[
-                        direction_options.index(selected_direction_display)
-                    ]["direction"]
-                else:
-                    selected_direction = available_directions[0]["direction"]
-                    st.sidebar.info(
-                        f"Single direction: {available_directions[0]['name']}"
-                    )
+    if direction_stops.empty:
+        return None
 
-                # Stop selection for highlighting
-                direction_stops = route_stops[
-                    route_stops["direction"] == selected_direction
-                ].sort_values("sequence")
-                if not direction_stops.empty:
-                    stop_options = [
-                        f"Stop {row['sequence']}: {row['stop_name']}"
-                        for idx, row in direction_stops.iterrows()
-                    ]
-                    selected_stop_display = st.sidebar.selectbox(
-                        "Highlight Stop (Optional)", ["None"] + stop_options
-                    )
+    stop_options = [
+        f"Stop {row['sequence']}: {row['stop_name']}"
+        for idx, row in direction_stops.iterrows()
+    ]
+    selected_stop_display = st.sidebar.selectbox(
+        "Highlight Stop (Optional)", ["None"] + stop_options
+    )
 
-                    selected_stop_id = None
-                    if selected_stop_display != "None":
-                        stop_seq = int(
-                            selected_stop_display.split(":")[0].replace("Stop ", "")
-                        )
-                        selected_stop_row = direction_stops[
-                            direction_stops["sequence"] == stop_seq
-                        ]
-                        if not selected_stop_row.empty:
-                            selected_stop_id = selected_stop_row.iloc[0]["stop_id"]
-                else:
-                    selected_stop_id = None
-            else:
-                st.sidebar.warning("⚠️ No stops found for this route")
-                selected_direction = 1
-                selected_stop_id = None
-        else:
-            selected_route_id = None
-            selected_route_info = None
-            route_stops = pd.DataFrame()
-            selected_direction = 1
-            selected_stop_id = None
-    else:
-        st.sidebar.warning("No routes found matching your search")
-        selected_route_id = None
-        selected_route_info = None
-        route_stops = pd.DataFrame()
-        selected_direction = 1
-        selected_stop_id = None
+    if selected_stop_display == "None":
+        return None
 
+    stop_seq = int(
+        selected_stop_display.split(":")[0].replace("Stop ", "")
+    )
+    selected_stop_row = direction_stops[
+        direction_stops["sequence"] == stop_seq
+    ]
+    if not selected_stop_row.empty:
+        return selected_stop_row.iloc[0]["stop_id"]
+
+    return None
+
+
+def _setup_sidebar_footer(routes_df, stops_df):
+    """Setup sidebar footer with cache button and stats"""
     # Clear cache button
     if st.sidebar.button("🔄 Clear Cache & Refresh"):
         st.cache_data.clear()
@@ -273,145 +285,168 @@ def main():
 
     # Database stats
     st.sidebar.markdown("---")
+    stops_count = len(stops_df) if stops_df is not None else 0
     st.sidebar.markdown(
         f"""
     <div class="stats-container">
         <h4 style="margin: 0 0 0.5rem 0;">📊 Database Status</h4>
         <p>Routes: {len(routes_df)}</p>
-        <p>Stops: {len(stops_df)}</p>
+        <p>Stops: {stops_count}</p>
         <p>Coverage: 100%</p>
     </div>
     """,
         unsafe_allow_html=True,
     )
 
-    # Main content
-    if selected_route_id and not route_stops.empty:
-        # Route information display
-        direction_name = "Outbound" if selected_direction == 1 else "Inbound"
-        direction_stops_count = len(
-            route_stops[route_stops["direction"] == selected_direction]
-        )
-        total_directions = len(route_stops["direction"].unique())
 
-        st.markdown(
-            f"""
-        <div class="route-info-grid">
-            <div class="route-info-card">
-                <h3>🚌 Route</h3>
-                <p>{selected_route_info['route_id']}</p>
-            </div>
-            <div class="route-info-card">
-                <h3>📍 Origin</h3>
-                <p>{selected_route_info['origin']}</p>
-            </div>
-            <div class="route-info-card">
-                <h3>🎯 Destination</h3>
-                <p>{selected_route_info['destination']}</p>
-            </div>
-            <div class="route-info-card">
-                <h3>🚏 Stops</h3>
-                <p>{direction_stops_count} ({direction_name})</p>
-            </div>
-            <div class="route-info-card">
-                <h3>↔️ Directions</h3>
-                <p>{total_directions} available</p>
-            </div>
-            <div class="route-info-card">
-                <h3>⚙️ Service Type</h3>
-                <p>{selected_route_info.get('service_type', 'N/A')}</p>
-            </div>
+def _display_route_info(selected_route_info, route_stops, selected_direction):
+    """Display route information"""
+    direction_name = "Outbound" if selected_direction == 1 else "Inbound"
+    direction_stops_count = len(
+        route_stops[route_stops["direction"] == selected_direction]
+    )
+    total_directions = len(route_stops["direction"].unique())
+
+    st.markdown(
+        f"""
+    <div class="route-info-grid">
+        <div class="route-info-card">
+            <h3>🚌 Route</h3>
+            <p>{selected_route_info['route_id']}</p>
         </div>
-        """,
-            unsafe_allow_html=True,
-        )
+        <div class="route-info-card">
+            <h3>📍 Origin</h3>
+            <p>{selected_route_info['origin']}</p>
+        </div>
+        <div class="route-info-card">
+            <h3>🎯 Destination</h3>
+            <p>{selected_route_info['destination']}</p>
+        </div>
+        <div class="route-info-card">
+            <h3>🚏 Stops</h3>
+            <p>{direction_stops_count} ({direction_name})</p>
+        </div>
+        <div class="route-info-card">
+            <h3>↔️ Directions</h3>
+            <p>{total_directions} available</p>
+        </div>
+        <div class="route-info-card">
+            <h3>⚙️ Service Type</h3>
+            <p>{selected_route_info.get('service_type', 'N/A')}</p>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
-        # Direction badges
-        available_directions = get_available_directions(route_stops)
-        direction_badges = []
-        for d in available_directions:
-            badge_class = "outbound" if d["direction"] == 1 else "inbound"
-            active = "🔸 " if d["direction"] == selected_direction else ""
-            direction_badges.append(
-                f'<span class="direction-badge {badge_class}">{active}{d["name"]} ({d["stops"]} stops)</span>'
+
+def _render_direction_badges(route_stops, selected_direction):
+    available_directions = get_available_directions(route_stops)
+    direction_badges = []
+    for d in available_directions:
+        badge_class = "outbound" if d["direction"] == 1 else "inbound"
+        active = "🔸 " if d["direction"] == selected_direction else ""
+        direction_badges.append(
+            f'<span class="direction-badge {badge_class}">{active}{d["name"]} ({d["stops"]} stops)</span>'
+        )
+    st.markdown(
+        f"**Available Directions:** {''.join(direction_badges)}",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_map_and_stops_table(route_stops, selected_stop_id, selected_direction):
+    st.header("🗺️ Interactive Route Map")
+    map_obj = create_enhanced_route_map(
+        route_stops, selected_stop_id, selected_direction
+    )
+    folium_static(map_obj, width=1200, height=600)
+    st.header("📍 Route Stops")
+    direction_stops = route_stops[
+        route_stops["direction"] == selected_direction
+    ].sort_values("sequence")
+    if not direction_stops.empty:
+        display_stops = direction_stops[["sequence", "stop_name", "stop_id"]].copy()
+        display_stops.columns = ["Sequence", "Stop Name", "Stop ID"]
+        if selected_stop_id:
+            def highlight_selected(row):
+                if row["Stop ID"] == selected_stop_id:
+                    return ["background-color: #ffeb3b"] * len(row)
+                return [""] * len(row)
+            st.dataframe(
+                display_stops.style.apply(highlight_selected, axis=1),
+                use_container_width=True,
+                height=400,
             )
-
-        st.markdown(
-            f"**Available Directions:** {''.join(direction_badges)}",
-            unsafe_allow_html=True,
-        )
-
-        # Map display
-        st.header("🗺️ Interactive Route Map")
-
-        # Create and display map
-        map_obj = create_enhanced_route_map(
-            route_stops, selected_stop_id, selected_direction
-        )
-        folium_static(map_obj, width=1200, height=600)
-
-        # Stops table
-        st.header("📍 Route Stops")
-        direction_stops = route_stops[
-            route_stops["direction"] == selected_direction
-        ].sort_values("sequence")
-
-        if not direction_stops.empty:
-            display_stops = direction_stops[["sequence", "stop_name", "stop_id"]].copy()
-            display_stops.columns = ["Sequence", "Stop Name", "Stop ID"]
-
-            # Highlight selected stop
-            if selected_stop_id:
-
-                def highlight_selected(row):
-                    if row["Stop ID"] == selected_stop_id:
-                        return ["background-color: #ffeb3b"] * len(row)
-                    return [""] * len(row)
-
-                st.dataframe(
-                    display_stops.style.apply(highlight_selected, axis=1),
-                    use_container_width=True,
-                    height=400,
-                )
-            else:
-                st.dataframe(display_stops, use_container_width=True, height=400)
         else:
-            st.warning("No stops available for the selected direction")
-
+            st.dataframe(display_stops, use_container_width=True, height=400)
     else:
-        # Default view
-        st.header("🗺️ Route Explorer")
-        st.info(
-            "👆 Select a route from the sidebar to view its path, stops, and real-time information."
-        )
+        st.warning("No stops available for the selected direction")
 
-        # Show sample statistics
-        col1, col2, col3, col4 = st.columns(4)
 
-        with col1:
-            st.metric("Total Routes", len(routes_df), "100% coverage")
-        with col2:
-            st.metric("Total Stops", len(stops_df), "All regions")
-        with col3:
-            # Count routes with multiple directions
-            routes_with_stops = routes_df[
-                routes_df["route_id"].isin(
-                    [
-                        route_id
-                        for route_id in routes_df["route_id"]
-                        if not get_route_stops_with_directions(route_id).empty
-                    ]
-                )
-            ]
-            st.metric("Active Routes", len(routes_with_stops), "Ready to explore")
-        with col4:
-            st.metric("Port", "8508", "Easy debugging")
+def _render_default_view(routes_df, stops_df):
+    st.header("🗺️ Route Explorer")
+    st.info(
+        "👆 Select a route from the sidebar to view its path, stops, and real-time information."
+    )
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Routes", len(routes_df), "100% coverage")
+    with col2:
+        stops_count = len(stops_df) if stops_df is not None else 0
+        st.metric("Total Stops", stops_count, "All regions")
+    with col3:
+        routes_with_stops = routes_df[
+            routes_df["route_id"].isin(
+                [
+                    route_id
+                    for route_id in routes_df["route_id"]
+                    if not get_route_stops_with_directions(route_id).empty
+                ]
+            )
+        ]
+        st.metric("Active Routes", len(routes_with_stops), "Ready to explore")
+    with col4:
+        st.metric("Port", "8508", "Easy debugging")
+    default_map = folium.Map(
+        location=[22.3193, 114.1694], zoom_start=11, tiles="OpenStreetMap"
+    )
+    folium_static(default_map, width=1200, height=400)
 
-        # Default Hong Kong map
-        default_map = folium.Map(
-            location=[22.3193, 114.1694], zoom_start=11, tiles="OpenStreetMap"
-        )
-        folium_static(default_map, width=1200, height=400)
+
+def main():
+    """Main application function"""
+    _setup_header()
+
+    # Load data
+    routes_df, stops_df = _load_and_validate_data()
+    if routes_df is None:
+        return
+
+    # Sort routes naturally
+    sorted_routes = get_sorted_routes(routes_df)
+
+    # Setup sidebar controls
+    filtered_routes, search_term = _setup_sidebar_controls(sorted_routes)
+
+    # Handle route selection
+    selected_route_id, selected_route_info, route_stops, selected_direction, selected_stop_id = _handle_route_selection(filtered_routes)
+
+    # Handle direction and stop selection if route is selected
+    if selected_route_id and not route_stops.empty and selected_direction is None:
+        selected_direction = _handle_direction_selection(route_stops)
+        selected_stop_id = _handle_stop_selection(route_stops, selected_direction)
+
+    # Setup sidebar footer
+    _setup_sidebar_footer(routes_df, stops_df)
+
+    # Main content
+    if selected_route_id and not route_stops.empty and selected_direction is not None:
+        _display_route_info(selected_route_info, route_stops, selected_direction)
+        _render_direction_badges(route_stops, selected_direction)
+        _render_map_and_stops_table(route_stops, selected_stop_id, selected_direction)
+    else:
+        _render_default_view(routes_df, stops_df)
 
 
 if __name__ == "__main__":

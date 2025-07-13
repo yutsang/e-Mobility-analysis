@@ -9,7 +9,7 @@ import re
 import sqlite3
 import time
 from datetime import datetime
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 import folium
 import pandas as pd
@@ -88,6 +88,20 @@ def load_traffic_data() -> tuple[pd.DataFrame, pd.DataFrame]:
         return pd.DataFrame(), pd.DataFrame()
 
 
+def _get_special_route_type(indicator: str) -> str:
+    """Get route type based on indicator suffix"""
+    route_type_map = {
+        "X": "Express",
+        "N": "Night",
+        "P": "Peak",
+        "A": "Airport",
+        "E": "Airport",
+        "S": "Special Service",
+        "R": "Special Service"
+    }
+    return route_type_map.get(indicator, "Special")
+
+
 def classify_route_type(route_row) -> str:
     """Classify route type based on route ID and destination"""
     route_id = str(route_row["route_id"]).upper()
@@ -102,18 +116,7 @@ def classify_route_type(route_row) -> str:
     special_indicators = params["route_types"]["special"]
     for indicator in special_indicators:
         if route_id.endswith(indicator):
-            if indicator == "X":
-                return "Express"
-            elif indicator == "N":
-                return "Night"
-            elif indicator == "P":
-                return "Peak"
-            elif indicator in ["A", "E"]:
-                return "Airport"
-            elif indicator in ["S", "R"]:
-                return "Special Service"
-            else:
-                return "Special"
+            return _get_special_route_type(indicator)
 
     return "Regular"
 
@@ -387,68 +390,46 @@ def get_route_geometry_with_progress(
     return all_coordinates
 
 
-def create_enhanced_route_map(
-    route_stops: pd.DataFrame,
-    selected_stop_id: Optional[str] = None,
-    direction: int = 1,
-) -> folium.Map:
-    """Create enhanced map with route stops, OSM routing, and center button"""
-
-    # Determine map bounds for auto-zoom
+def _calculate_map_bounds(route_stops: pd.DataFrame, direction: int, selected_stop_id: Optional[str] = None) -> tuple[float, float, int]:
+    """Calculate map center and zoom level based on route stops"""
     if not route_stops.empty:
         direction_stops = route_stops[route_stops["direction"] == direction]
         if not direction_stops.empty:
-            # Calculate bounds
             lats = direction_stops["lat"].dropna()
             lngs = direction_stops["lng"].dropna()
 
             if len(lats) > 0 and len(lngs) > 0:
-                # Calculate center
                 center_lat = lats.mean()
                 center_lng = lngs.mean()
-
-                # Calculate bounds with better coverage consideration
                 lat_range = lats.max() - lats.min()
                 lng_range = lngs.max() - lngs.min()
-
-                # Determine zoom level based on the spread of stops - improved zoom levels
                 max_range = max(lat_range, lng_range)
 
-                if max_range > ZOOM_VERY_SPREAD:  # Very spread out
+                # Determine zoom level based on spread
+                if max_range > ZOOM_VERY_SPREAD:
                     zoom_level = 11
-                elif max_range > ZOOM_MODERATE_SPREAD:  # Moderately spread out
+                elif max_range > ZOOM_MODERATE_SPREAD:
                     zoom_level = 12
-                elif max_range > ZOOM_SOME_SPREAD:  # Somewhat spread out
+                elif max_range > ZOOM_SOME_SPREAD:
                     zoom_level = 13
-                elif max_range > ZOOM_CLOSE:  # Close together
+                elif max_range > ZOOM_CLOSE:
                     zoom_level = 14
-                elif max_range > ZOOM_VERY_CLOSE:  # Very close
+                elif max_range > ZOOM_VERY_CLOSE:
                     zoom_level = 15
-                else:  # Extremely close
+                else:
                     zoom_level = 16
 
                 # Override for selected stop
                 if selected_stop_id and params["map"]["auto_zoom"]["enabled"]:
                     zoom_level = min(zoom_level + 1, STOP_ZOOM)
 
-            else:
-                center_lat, center_lng = HK_CENTER
-                zoom_level = DEFAULT_ZOOM
-        else:
-            center_lat, center_lng = HK_CENTER
-            zoom_level = DEFAULT_ZOOM
-    else:
-        center_lat, center_lng = HK_CENTER
-        zoom_level = DEFAULT_ZOOM
+                return center_lat, center_lng, zoom_level
 
-    # Create map
-    m = folium.Map(
-        location=[center_lat, center_lng],
-        zoom_start=zoom_level,
-        tiles=params["map"]["tiles"],
-    )
+    return HK_CENTER[0], HK_CENTER[1], DEFAULT_ZOOM
 
-    # Add center button to return to HK range
+
+def _add_center_button(m: folium.Map) -> None:
+    """Add center button to map"""
     center_button_html = f"""
     <div style="position: fixed;
                 top: 10px; right: 10px; width: 150px; height: 40px;
@@ -462,61 +443,85 @@ def create_enhanced_route_map(
     """
     m.get_root().html.add_child(folium.Element(center_button_html))
 
+
+def _add_route_path(m: folium.Map, route_stops: pd.DataFrame, direction: int) -> None:
+    """Add route path to map"""
+    route_coords = get_route_geometry_with_progress(route_stops, direction)
+
+    if len(route_coords) > 1:
+        folium.PolyLine(
+            locations=route_coords,
+            color="#1f77b4",
+            weight=5,
+            opacity=0.8,
+            popup=f"Bus Route Direction {direction} (OSM)",
+            tooltip="Actual Bus Route Through All Stops",
+        ).add_to(m)
+
+
+def _add_stop_markers(m: folium.Map, route_stops: pd.DataFrame, direction: int, selected_stop_id: Optional[str] = None) -> None:
+    """Add stop markers to map"""
+    direction_stops = route_stops[route_stops["direction"] == direction].sort_values("sequence")
+
+    for idx, stop in direction_stops.iterrows():
+        if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
+            if selected_stop_id and stop["stop_id"] == selected_stop_id:
+                icon = folium.Icon(color="red", icon="star", prefix="fa")
+                popup_text = f"🌟 SELECTED: {stop['stop_name']}<br/>Stop #{stop['sequence']}<br/>ID: {stop['stop_id']}"
+            else:
+                icon = folium.Icon(color="blue", icon="bus", prefix="fa")
+                popup_text = f"🚏 {stop['stop_name']}<br/>Stop #{stop['sequence']}<br/>ID: {stop['stop_id']}"
+
+            folium.Marker(
+                location=[stop["lat"], stop["lng"]],
+                popup=popup_text,
+                tooltip=f"Stop {stop['sequence']}: {stop['stop_name']}",
+                icon=icon,
+            ).add_to(m)
+
+
+def _add_reference_line(m: folium.Map, route_stops: pd.DataFrame, direction: int) -> None:
+    """Add reference line between stops"""
+    direction_stops = route_stops[route_stops["direction"] == direction].sort_values("sequence")
+    stop_coords = []
+
+    for idx, stop in direction_stops.iterrows():
+        if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
+            stop_coords.append([stop["lat"], stop["lng"]])
+
+    if len(stop_coords) > 1:
+        folium.PolyLine(
+            locations=stop_coords,
+            color="lightblue",
+            weight=2,
+            opacity=0.4,
+            popup="Direct Path",
+            tooltip="Direct Line Between Stops",
+            dashArray="5, 5",
+        ).add_to(m)
+
+
+def create_enhanced_route_map(
+    route_stops: pd.DataFrame,
+    selected_stop_id: Optional[str] = None,
+    direction: int = 1,
+) -> folium.Map:
+    """Create enhanced map with route stops, OSM routing, and center button"""
+    center_lat, center_lng, zoom_level = _calculate_map_bounds(route_stops, direction, selected_stop_id)
+
+    # Create map
+    m = folium.Map(
+        location=[center_lat, center_lng],
+        zoom_start=zoom_level,
+        tiles=params["map"]["tiles"],
+    )
+
+    _add_center_button(m)
+
     if not route_stops.empty:
-        # Get OSM route geometry for selected direction
-        route_coords = get_route_geometry_with_progress(route_stops, direction)
-
-        # Add route path using OSM waypoint routing
-        if len(route_coords) > 1:
-            folium.PolyLine(
-                locations=route_coords,
-                color="#1f77b4",
-                weight=5,
-                opacity=0.8,
-                popup=f"Bus Route Direction {direction} (OSM)",
-                tooltip="Actual Bus Route Through All Stops",
-            ).add_to(m)
-
-        # Add stops as markers
-        direction_stops = route_stops[
-            route_stops["direction"] == direction
-        ].sort_values("sequence")
-
-        for idx, stop in direction_stops.iterrows():
-            if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
-                # Determine marker style
-                if selected_stop_id and stop["stop_id"] == selected_stop_id:
-                    # Highlighted stop
-                    icon = folium.Icon(color="red", icon="star", prefix="fa")
-                    popup_text = f"🌟 SELECTED: {stop['stop_name']}<br/>Stop #{stop['sequence']}<br/>ID: {stop['stop_id']}"
-                else:
-                    # Regular stop
-                    icon = folium.Icon(color="blue", icon="bus", prefix="fa")
-                    popup_text = f"🚏 {stop['stop_name']}<br/>Stop #{stop['sequence']}<br/>ID: {stop['stop_id']}"
-
-                folium.Marker(
-                    location=[stop["lat"], stop["lng"]],
-                    popup=popup_text,
-                    tooltip=f"Stop {stop['sequence']}: {stop['stop_name']}",
-                    icon=icon,
-                ).add_to(m)
-
-        # Add reference line for comparison
-        stop_coords = []
-        for idx, stop in direction_stops.iterrows():
-            if pd.notna(stop["lat"]) and pd.notna(stop["lng"]):
-                stop_coords.append([stop["lat"], stop["lng"]])
-
-        if len(stop_coords) > 1:
-            folium.PolyLine(
-                locations=stop_coords,
-                color="lightblue",
-                weight=2,
-                opacity=0.4,
-                popup="Direct Path",
-                tooltip="Direct Line Between Stops",
-                dashArray="5, 5",
-            ).add_to(m)
+        _add_route_path(m, route_stops, direction)
+        _add_stop_markers(m, route_stops, direction, selected_stop_id)
+        _add_reference_line(m, route_stops, direction)
 
     return m
 
