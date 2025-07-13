@@ -44,9 +44,10 @@ jobs:
     
     - name: Create test database
       run: |
+        rm -f data/01_raw/kmb_data.db  # Remove old DB if exists
         mkdir -p data/01_raw
         sqlite3 data/01_raw/kmb_data.db << 'EOF'
-        CREATE TABLE routes (
+        CREATE TABLE IF NOT EXISTS routes (
           route_id TEXT PRIMARY KEY,
           route_name TEXT,
           origin_en TEXT,
@@ -54,23 +55,23 @@ jobs:
           service_type INTEGER,
           company TEXT
         );
-        CREATE TABLE stops (
+        CREATE TABLE IF NOT EXISTS stops (
           stop_id TEXT PRIMARY KEY,
           stop_name_en TEXT,
           lat REAL,
           lng REAL,
           company TEXT
         );
-        CREATE TABLE route_stops (
+        CREATE TABLE IF NOT EXISTS route_stops (
           route_id TEXT,
           stop_id TEXT,
           direction INTEGER,
           sequence INTEGER,
           service_type INTEGER
         );
-        INSERT INTO routes VALUES ('65X', 'Route 65X', 'Tin Shui Wai', 'Tsim Sha Tsui', 1, 'KMB');
-        INSERT INTO stops VALUES ('STOP1', 'Test Stop 1', 22.3193, 114.1694, 'KMB');
-        INSERT INTO route_stops VALUES ('65X', 'STOP1', 1, 1, 1);
+        INSERT INTO routes (route_id, route_name, origin_en, destination_en, service_type, company) VALUES ('65X', 'Route 65X', 'Tin Shui Wai', 'Tsim Sha Tsui', 1, 'KMB');
+        INSERT INTO stops (stop_id, stop_name_en, lat, lng, company) VALUES ('STOP1', 'Test Stop 1', 22.3193, 114.1694, 'KMB');
+        INSERT INTO route_stops (route_id, stop_id, direction, sequence, service_type) VALUES ('65X', 'STOP1', 1, 1, 1);
         EOF
     
     - name: Code formatting with Black
